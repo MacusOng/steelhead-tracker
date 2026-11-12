@@ -1,16 +1,30 @@
-/* Where's O Mykiss — v0.2.0 "River current" theme */
+/* Where's O Mykiss — v0.3.0 themes + fonts */
 
-/* ---- navbar: blue -> teal gradient ---- */
-.navbar {
-  background: linear-gradient(90deg, #0e2d49 0%, #1f5f9e 45%, #1aa37d 100%) !important;
-  box-shadow: 0 2px 10px rgba(0,0,0,.18);
+:root { --app-font: 'Space Grotesk', system-ui, sans-serif;
+        --nav-grad: linear-gradient(90deg, #0e2d49 0%, #1f5f9e 45%, #1aa37d 100%); }
+
+/* interface font applies everywhere */
+body, .navbar, .card, .form-control, .form-select, .btn, .accordion,
+.value-box, .shiny-input-container, table.dataTable, .brand-title {
+  font-family: var(--app-font) !important;
 }
-.navbar .nav-link, .navbar .navbar-brand { color: #ffffff !important; }
+
+/* ---- per-theme navbar gradient ---- */
+html[data-theme="light"]    { --nav-grad: linear-gradient(90deg,#17324e,#2a6fb0 55%,#1aa37d); }
+html[data-theme="dark"]     { --nav-grad: linear-gradient(90deg,#0b0e12,#1b2740 55%,#13343b); }
+html[data-theme="midnight"] { --nav-grad: linear-gradient(90deg,#060a16,#13213f 55%,#123a58); }
+html[data-theme="graphite"] { --nav-grad: linear-gradient(90deg,#141416,#2a2a2e 55%,#4a1f1f); }
+html[data-theme="forest"]   { --nav-grad: linear-gradient(90deg,#0a140d,#163a24 55%,#1f6b43); }
+html[data-theme="sand"]     { --nav-grad: linear-gradient(90deg,#6b5a33,#9a7d3e 55%,#b5801f); }
+html[data-theme="highcon"]  { --nav-grad: linear-gradient(90deg,#000,#1a1a00 55%,#3a3a00); }
+
+/* ---- navbar ---- */
+.navbar { background: var(--nav-grad) !important; box-shadow: 0 2px 10px rgba(0,0,0,.18); }
+.navbar .nav-link, .navbar .navbar-brand { color: #fff !important; }
 .navbar .nav-link:hover { color: #ffd166 !important; }
 .navbar .nav-link.active, .navbar .nav-link[aria-selected="true"] {
-  color: #ffffff !important; border-bottom: 3px solid #ff6b4a;
-}
-.navbar-brand { display: flex; align-items: center; gap: 10px; padding-top: 2px; padding-bottom: 2px; }
+  color: #fff !important; border-bottom: 3px solid #ff6b4a; }
+.navbar-brand { display: flex; align-items: center; gap: 10px; }
 
 /* ---- animated fish ---- */
 .swim-lane { position: relative; width: 116px; height: 34px; overflow: hidden; flex: 0 0 auto; }
@@ -24,27 +38,23 @@
 .tail { transform-origin: 46px 16px; animation: wag .42s ease-in-out infinite alternate; }
 @keyframes wag { from { transform: rotate(-13deg); } to { transform: rotate(13deg); } }
 @media (prefers-reduced-motion: reduce) {
-  .swim, .tail, .fish-rb, .fish-st { animation: none; }
-  .fish-st { opacity: 0; }
-}
+  .swim, .tail, .fish-rb, .fish-st { animation: none; } .fish-st { opacity: 0; } }
 
-/* ---- brand text ---- */
-.brand-title { font-size: 21px; font-weight: 800; letter-spacing: .2px; color: #fff;
-  text-shadow: 0 1px 2px rgba(0,0,0,.25); }
+/* ---- brand text + badges ---- */
+.brand-title { font-size: 21px; font-weight: 800; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.25); }
 .brand-title .q { color: #ffd166; }
-.beta { background: #ff6b4a; color: #fff; font-size: 11px; font-weight: 700;
-  padding: 2px 9px; border-radius: 999px; text-transform: uppercase; letter-spacing: .5px;
-  box-shadow: 0 1px 3px rgba(0,0,0,.2); }
-
-/* ---- right-side meta ---- */
-.navmeta { text-align: right; line-height: 1.25; font-size: 11.5px; color: #eaf4ff; padding: 4px 4px; }
+.beta { background: #ff6b4a; color: #fff; font-size: 11px; font-weight: 700; padding: 2px 9px;
+  border-radius: 999px; text-transform: uppercase; letter-spacing: .5px; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+.navmeta { text-align: right; line-height: 1.25; font-size: 11.5px; color: #eaf4ff; padding: 4px; }
 .navmeta b { color: #fff; }
-.vchip { display: inline-block; font-size: 11px; color: #e9fbf4; background: rgba(255,255,255,.16);
-  padding: 3px 9px; border-radius: 999px; }
+.vchip { font-size: 11px; color: #e9fbf4; background: rgba(255,255,255,.16); padding: 3px 9px; border-radius: 999px; }
 .ghlink { color: #fff !important; font-size: 18px; }
 
-/* ---- a little more color in the body ---- */
-.card > .card-header { color: #0e2d49; font-weight: 600;
-  border-bottom: 2px solid #1aa37d; background: #f3f8f6; }
-.bslib-value-box .value-box-showcase { opacity: .9; }
-body { background: #f6f9fb; }
+/* ---- font preview box ---- */
+.font-preview { font-family: var(--app-font); font-size: 17px; line-height: 1.4;
+  padding: 10px 12px; margin-top: 10px; border: 1px solid rgba(128,128,128,.35);
+  border-radius: 8px; background: rgba(128,128,128,.06); }
+
+/* ---- theme-adaptive card headers (use the theme's primary) ---- */
+.card > .card-header { font-weight: 600; background: transparent;
+  border-bottom: 2px solid var(--bs-primary); }

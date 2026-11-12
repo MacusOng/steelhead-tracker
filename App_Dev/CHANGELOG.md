@@ -2,6 +2,13 @@
 
 All notable changes to this app. Newest first. Semantic versioning (MAJOR.MINOR.PATCH).
 
+## 0.3.0 — 2026-11-12
+Left **sidebar** added across the whole app. **Filters** (release location / stream, mark year,
+release year) now subset every tab, with a live "N of 3,000 fish selected" count and a Reset button.
+**Settings** holds 8 colour themes (Classic, Light, Dark, Midnight, Graphite, Forest, Sand, High
+Contrast) and a 10-font interface picker with a live "quick brown fox" preview. New dependency:
+`shinyjs`; Google Fonts loaded for the picker.
+
 ## 0.2.0 — 2026-11-12
 Rebrand to **Where's O Mykiss** with an animated, alternating rainbow-trout / steelhead that swims
 across the title. New "River current" theme (blue→teal gradient navbar, colorful value boxes). Added

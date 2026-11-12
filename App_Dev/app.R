@@ -1,6 +1,7 @@
 library(shiny)
 library(bslib)
 library(bsicons)
+library(shinyjs)
 library(dplyr)
 library(tidyr)
 library(readr)
@@ -10,16 +11,13 @@ library(DT)
 library(scales)
 library(viridisLite)
 
-# setwd("C:/Users/mong/OneDrive - Okanagan Nation Alliance/steelhead-tracker")
-# shiny::runApp("App_Dev")
-
 # =====================================================================
-# Let's Follow the Steelhead  —  Okanagan O. mykiss PIT detection explorer
+# Where's O Mykiss  —  Okanagan O. mykiss PIT detection explorer
 # Part of the CSS FTT dashboard family (sibling of sockeye-tracker).
 # Data: PTAGIS complete tag history, all event types, 19 Aug 2026.
 # Cohort = fish released 2019+. Dates are as recorded (UTC).
 # =====================================================================
-APP_VERSION <- "0.2.0"
+APP_VERSION <- "0.3.0"
 BUILT_UTC   <- "2026-11-12"
 
 # ---- load data ----
@@ -29,10 +27,14 @@ ev   <- read_csv("data/events_clean.csv",     show_col_types = FALSE) |>
                  doy = as.integer(format(event_date, "%j")))
 fs   <- read_csv("data/fate_summary.csv",     show_col_types = FALSE)
 rec  <- read_csv("data/recoveries.csv",       show_col_types = FALSE)
-cret <- read_csv("data/confirmed_return.csv", show_col_types = FALSE) |>
-          mutate(event_date = as.Date(event_date))
 
-# ---- palette & lookups (full names only; no site codes in the UI) ----
+# mark year per fish (tag event); here equals release year, but kept as its own filter
+mark_year <- ev |> filter(event_type == "Mark") |>
+  group_by(tag_code) |> summarise(mark_year = min(event_year), .groups = "drop")
+pf <- pf |> left_join(mark_year, by = "tag_code") |>
+  mutate(mark_year = ifelse(is.na(mark_year), release_year, mark_year))
+
+# ---- lookups ----
 pal <- list(navy="#1F3B57", blue="#2a78d6", orange="#eb6834", aqua="#1baf7a",
             red="#9E2B25", green="#1E6B3A", grey="#9aa3a8")
 creek_codes <- c("OKI","OKV","OKS","OKW")
@@ -46,14 +48,47 @@ fate_cols <- c(
   "left basin / outmigrant (no return)" = pal$orange,
   "in-basin only (no outmigration)"     = pal$blue,
   "marked only (never re-detected)"     = pal$grey)
-yr_max <- max(pf$release_year, na.rm = TRUE)
+fate_order <- fs$fate
+fate_def   <- setNames(fs$definition, fs$fate)
+
+locs   <- sort(unique(pf$release_site))
+ry_min <- min(pf$release_year, na.rm = TRUE); ry_max <- max(pf$release_year, na.rm = TRUE)
+my_min <- min(pf$mark_year,   na.rm = TRUE);  my_max <- max(pf$mark_year,   na.rm = TRUE)
 
 theme_okn <- function() {
   theme_minimal(base_size = 13) +
     theme(panel.grid.minor = element_blank(),
-          plot.title = element_text(color = pal$navy, face = "bold"),
+          plot.title = element_text(face = "bold"),
           legend.position = "bottom")
 }
+
+# ---- 8 themes ----
+mk <- function(bg, fg, primary, secondary = "#1aa37d")
+  bs_theme(version = 5, bg = bg, fg = fg, primary = primary, secondary = secondary)
+themes <- list(
+  classic  = mk("#f6f9fb", "#0e2d49", "#1f5f9e"),
+  light    = mk("#ffffff", "#1a1a1a", "#1f5f9e"),
+  dark     = mk("#15181c", "#e6edf3", "#3b82f6"),
+  midnight = mk("#0b1220", "#cdd9e5", "#4f8cff"),
+  graphite = mk("#1b1b1d", "#e4e4e6", "#e03a3a", "#8a8a8e"),
+  forest   = mk("#0f1a12", "#d7e6d8", "#2f9e5e", "#6cc08a"),
+  sand     = mk("#f5efe2", "#3a2f1e", "#b5801f", "#caa45a"),
+  highcon  = mk("#000000", "#ffffff", "#ffd400", "#ffffff"))
+theme_choices <- c("Classic"="classic","Light"="light","Dark"="dark","Midnight"="midnight",
+                   "Graphite"="graphite","Forest"="forest","Sand"="sand","High Contrast"="highcon")
+
+# ---- 10 fonts ----
+font_stacks <- c(
+  "Space Grotesk" = "'Space Grotesk', system-ui, sans-serif",
+  "Inter"         = "'Inter', system-ui, sans-serif",
+  "Rubik"         = "'Rubik', system-ui, sans-serif",
+  "DM Sans"       = "'DM Sans', system-ui, sans-serif",
+  "Work Sans"     = "'Work Sans', system-ui, sans-serif",
+  "Montserrat"    = "'Montserrat', system-ui, sans-serif",
+  "Oswald"        = "'Oswald', system-ui, sans-serif",
+  "Archivo"       = "'Archivo', system-ui, sans-serif",
+  "Arial"         = "Arial, Helvetica, sans-serif",
+  "Trebuchet MS"  = "'Trebuchet MS', Verdana, sans-serif")
 
 # ---- animated brand (two fish, alternating; swims across) ----
 fish_svg <- '
@@ -87,32 +122,65 @@ brand_html <- tags$span(
   tags$span(class = "brand-title", HTML("Where&#39;s <span class=\"q\">O&nbsp;Mykiss</span>")),
   tags$span(class = "beta", "Beta"))
 
+google_fonts <- "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&family=Inter:wght@400;600&family=Rubik&family=DM+Sans&family=Work+Sans&family=Montserrat&family=Oswald&family=Archivo&display=swap"
+
 # =====================================================================
 # UI
 # =====================================================================
 ui <- page_navbar(
   title = brand_html,
   window_title = "Where's O Mykiss",
-  theme = bs_theme(version = 5, primary = "#1f5f9e", secondary = "#1aa37d"),
-  header = tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "styles.css")),
+  theme = themes[["classic"]],
   fillable = FALSE,
+  header = tagList(
+    useShinyjs(),
+    tags$head(
+      tags$link(rel = "preconnect", href = "https://fonts.googleapis.com"),
+      tags$link(rel = "preconnect", href = "https://fonts.gstatic.com", crossorigin = ""),
+      tags$link(rel = "stylesheet", href = google_fonts),
+      tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"))
+  ),
+
+  sidebar = sidebar(
+    width = 320,
+    accordion(
+      open = "Filters",
+      accordion_panel(
+        "Filters", icon = bs_icon("funnel"),
+        selectInput("f_loc", "Release location (stream)", choices = locs,
+                    selected = locs, multiple = TRUE),
+        sliderInput("f_mark", "Mark year", min = my_min, max = my_max,
+                    value = c(my_min, my_max), step = 1, sep = ""),
+        sliderInput("f_rel", "Release year", min = ry_min, max = ry_max,
+                    value = c(ry_min, ry_max), step = 1, sep = ""),
+        actionButton("f_reset", "Reset filters", class = "btn-sm btn-outline-secondary"),
+        tags$div(class = "filt-count text-muted small mt-2", textOutput("f_count"))
+      ),
+      accordion_panel(
+        "Settings", icon = bs_icon("gear"),
+        radioButtons("theme", "Theme", choices = theme_choices, selected = "classic"),
+        selectInput("font", "Interface font", choices = names(font_stacks),
+                    selected = "Space Grotesk"),
+        tags$div(class = "font-preview", id = "fontPreview",
+                 "The quick brown fox jumps over the lazy dog 0123456789")
+      )
+    )
+  ),
 
   nav_panel(
     "Overview", icon = bs_icon("house"),
     layout_column_wrap(
       width = 1/5, heights_equal = "row", fill = FALSE,
-      value_box("Fish tagged (2019+)", textOutput("kpi_fish"),
+      value_box("Fish tagged", textOutput("kpi_fish"),
                 showcase = bs_icon("tag"), theme = value_box_theme(bg = "#1f5f9e", fg = "white")),
       value_box("Events tracked", textOutput("kpi_events"),
                 showcase = bs_icon("broadcast"), theme = value_box_theme(bg = "#1aa37d", fg = "white")),
       value_box("Left the Okanagan", textOutput("kpi_left"),
                 showcase = bs_icon("box-arrow-right"), theme = value_box_theme(bg = "#e08a2e", fg = "white")),
       value_box("Predation deaths", textOutput("kpi_pred"),
-                showcase = bs_icon("exclamation-triangle"),
-                theme = value_box_theme(bg = pal$red, fg = "white")),
+                showcase = bs_icon("exclamation-triangle"), theme = value_box_theme(bg = pal$red, fg = "white")),
       value_box("Confirmed return", textOutput("kpi_ret"),
-                showcase = bs_icon("house-heart"),
-                theme = value_box_theme(bg = pal$green, fg = "white"))
+                showcase = bs_icon("house-heart"), theme = value_box_theme(bg = pal$green, fg = "white"))
     ),
     card(card_header("Correction note"), markdown(
       "An earlier draft (interrogation detections only) mislabelled outmigrating smolts as having
@@ -120,24 +188,19 @@ ui <- page_navbar(
       events fixed this: fish that go downstream and are never seen again have **left**, and several
       were recovered dead on Columbia predation islands. Individual fish are **not** labelled
       steelhead vs rainbow — detections cannot resolve that.")),
-    card(card_header("Fate of the tagged fish"),
+    card(card_header("Fate of the selected fish"),
          plotlyOutput("plot_fate", height = "330px"), DTOutput("tbl_fate"))
   ),
 
   nav_panel(
     "Tributary timing", icon = bs_icon("calendar-event"),
-    layout_sidebar(
-      sidebar = sidebar(
-        checkboxGroupInput("tim_creeks", "Tributaries",
-          choices = setNames(creek_codes, creek_names[creek_codes]), selected = creek_codes),
-        sliderInput("tim_years", "Observation year",
-          min = 2019, max = yr_max, value = c(2019, yr_max), step = 1, sep = "")
-      ),
-      card(card_header("First detection in each tributary (antenna observations)"),
-           plotlyOutput("plot_timing", height = "460px"),
-           card_footer(class = "text-muted",
-             "Each point is one fish's first antenna detection at that creek, by day of year."))
-    )
+    card(card_header("First detection in each tributary (antenna observations)"),
+         checkboxGroupInput("tim_creeks", NULL,
+           choices = setNames(creek_codes, creek_names[creek_codes]),
+           selected = creek_codes, inline = TRUE),
+         plotlyOutput("plot_timing", height = "460px"),
+         card_footer(class = "text-muted",
+           "Each point is one fish's first antenna detection at that creek, by day of year."))
   ),
 
   nav_panel(
@@ -187,32 +250,22 @@ ui <- page_navbar(
          DTOutput("tbl_perfish"))
   ),
 
-  # ---------------- Guide / tutorial (mandatory walk-through) ----------------
   nav_panel(
     "Guide", icon = bs_icon("mortarboard"),
     card(card_header("How to use this dashboard"), markdown(
-      "**1. Overview** — the headline. Five value boxes, then the *fate bar*: of every tagged fish,
-       how many were never re-detected, stayed in-basin, left the Okanagan, died to predation, or
-       came home.
+      "**Left panel — Filters** subset the whole dashboard by release location, mark year and release
+       year. **Settings** let you pick a colour theme and interface font.
 
-       **2. Tributary timing** — tick creeks and drag the year slider; the plot shows when fish were
-       first detected in each creek.
-
-       **3. Presence** — a site × year heatmap; darker = more fish. Hover any cell.
-
-       **4. Outmigration & predation** — when smolts headed downstream, and the recoveries that reveal
-       their fate (mostly bird predation on the Columbia).
-
-       **5. Fish explorer** — the heart of it. Filter by fate or pick a tag, and the app draws that
-       one fish's whole journey. It opens on `3DD.003D53EC37`, the single confirmed return.
-
-       **6. Data** — the full per-fish table, searchable and downloadable.")),
+       **Overview** — value boxes and the fate bar for the fish currently selected.
+       **Tributary timing** — when fish were first detected in each creek.
+       **Presence** — a site x year heatmap; darker = more fish.
+       **Outmigration & predation** — downstream timing and the recoveries that reveal fate.
+       **Fish explorer** — pick a tag and trace its whole journey (opens on the one confirmed return).
+       **Data** — the full per-fish table, searchable and downloadable.")),
     card(card_header("Reading the fates"), DTOutput("tbl_guide")),
     card(card_header("The big caveat"), markdown(
       "Steelhead and rainbow trout are the **same species** (*O. mykiss*). PIT detections show
-       *where and when* a fish was, never *which life history* it is. No fish here is labelled
-       \"steelhead.\" Telling anadromous from resident needs scale ageing, otolith/fin-ray
-       microchemistry, or genetics."))
+       *where and when* a fish was, never *which life history* it is."))
   ),
 
   nav_spacer(),
@@ -227,14 +280,50 @@ ui <- page_navbar(
 # SERVER
 # =====================================================================
 server <- function(input, output, session) {
-  output$kpi_fish   <- renderText(format(nrow(pf), big.mark = ","))
-  output$kpi_events <- renderText(format(nrow(ev), big.mark = ","))
-  output$kpi_left   <- renderText(sum(pf$left_basin == "Y", na.rm = TRUE))
-  output$kpi_pred   <- renderText(fs$n_fish[fs$fate == "recovered - predation island"])
-  output$kpi_ret    <- renderText(fs$n_fish[fs$fate == "confirmed return (adult, natal)"])
 
+  # ---- global filters ----
+  pf_f <- reactive({
+    req(input$f_loc)
+    pf |> filter(release_site %in% input$f_loc,
+                 mark_year    >= input$f_mark[1], mark_year    <= input$f_mark[2],
+                 release_year >= input$f_rel[1],  release_year <= input$f_rel[2])
+  })
+  tags_f <- reactive(pf_f()$tag_code)
+  ev_f   <- reactive(ev |> filter(tag_code %in% tags_f()))
+
+  output$f_count <- renderText(paste0(nrow(pf_f()), " of ", nrow(pf), " fish selected"))
+  observeEvent(input$f_reset, {
+    updateSelectInput(session, "f_loc", selected = locs)
+    updateSliderInput(session, "f_mark", value = c(my_min, my_max))
+    updateSliderInput(session, "f_rel",  value = c(ry_min, ry_max))
+  })
+
+  # ---- theme & font ----
+  observeEvent(input$theme, {
+    session$setCurrentTheme(themes[[input$theme]])
+    runjs(sprintf("document.documentElement.setAttribute('data-theme','%s')", input$theme))
+  }, ignoreInit = TRUE)
+  observeEvent(input$font, {
+    runjs(sprintf("document.documentElement.style.setProperty('--app-font', \"%s\")",
+                  font_stacks[[input$font]]))
+  })
+
+  # ---- KPIs ----
+  output$kpi_fish   <- renderText(format(nrow(pf_f()), big.mark = ","))
+  output$kpi_events <- renderText(format(nrow(ev_f()), big.mark = ","))
+  output$kpi_left   <- renderText(sum(pf_f()$left_basin == "Y", na.rm = TRUE))
+  output$kpi_pred   <- renderText(sum(pf_f()$fate == "recovered - predation island"))
+  output$kpi_ret    <- renderText(sum(startsWith(pf_f()$fate, "confirmed return")))
+
+  # ---- fate ----
+  fate_tbl <- reactive({
+    pf_f() |> count(fate, name = "n_fish") |>
+      right_join(tibble(fate = fate_order), by = "fate") |>
+      mutate(n_fish = coalesce(n_fish, 0L), definition = fate_def[fate]) |>
+      arrange(match(fate, fate_order))
+  })
   output$plot_fate <- renderPlotly({
-    d <- fs |> mutate(fate = factor(fate, levels = rev(fs$fate)))
+    d <- fate_tbl() |> mutate(fate = factor(fate, levels = rev(fate_order)))
     p <- ggplot(d, aes(fate, n_fish, fill = fate, text = paste0(fate, ": ", n_fish))) +
       geom_col() + coord_flip() +
       scale_fill_manual(values = fate_cols, guide = "none") +
@@ -242,20 +331,19 @@ server <- function(input, output, session) {
     ggplotly(p, tooltip = "text") |> layout(showlegend = FALSE)
   })
   output$tbl_fate <- renderDT(
-    datatable(fs, rownames = FALSE, options = list(dom = "t", pageLength = 10),
+    datatable(fate_tbl(), rownames = FALSE, options = list(dom = "t", pageLength = 10),
               colnames = c("Fate", "Fish", "Definition")))
   output$tbl_guide <- renderDT(
     datatable(fs, rownames = FALSE, options = list(dom = "t", pageLength = 10),
               colnames = c("Fate", "Fish", "Definition")))
 
-  timing <- reactive({
-    ev |> filter(event_type == "Observation", site_code %in% input$tim_creeks,
-                 event_year >= input$tim_years[1], event_year <= input$tim_years[2]) |>
+  # ---- tributary timing ----
+  output$plot_timing <- renderPlotly({
+    req(input$tim_creeks)
+    d <- ev_f() |> filter(event_type == "Observation", site_code %in% input$tim_creeks) |>
       group_by(tag_code, site_code) |> summarise(doy = min(doy), .groups = "drop") |>
       mutate(creek = creek_names[site_code])
-  })
-  output$plot_timing <- renderPlotly({
-    d <- timing(); validate(need(nrow(d) > 0, "No detections for this selection."))
+    validate(need(nrow(d) > 0, "No detections for this selection."))
     creek_pal <- c("Inkaneep Creek" = pal$blue, "Vaseux Creek" = pal$orange,
                    "Shingle Creek" = pal$aqua, "Shuttleworth Creek" = "#8a5cd0")
     p <- ggplot(d, aes(doy, creek, color = creek, text = paste0(creek, " · day ", doy))) +
@@ -269,9 +357,11 @@ server <- function(input, output, session) {
     ggplotly(p, tooltip = "text")
   })
 
+  # ---- presence ----
   output$plot_heat <- renderPlotly({
-    d <- ev |> filter(event_type == "Observation") |>
+    d <- ev_f() |> filter(event_type == "Observation") |>
       group_by(site_name, event_year) |> summarise(fish = n_distinct(tag_code), .groups = "drop")
+    validate(need(nrow(d) > 0, "No detections for this selection."))
     ord <- d |> group_by(site_name) |> summarise(t = sum(fish)) |> arrange(t) |> pull(site_name)
     d <- d |> mutate(site_name = factor(site_name, levels = ord))
     p <- ggplot(d, aes(factor(event_year), site_name, fill = fish,
@@ -282,21 +372,26 @@ server <- function(input, output, session) {
     ggplotly(p, tooltip = "text")
   })
 
+  # ---- outmigration ----
   output$plot_out <- renderPlotly({
-    d <- ev |> filter(site_code %in% down_sites) |>
+    d <- ev_f() |> filter(site_code %in% down_sites) |>
       group_by(tag_code) |> summarise(dt = min(event_date), .groups = "drop") |>
       mutate(month = factor(format(dt, "%b"), levels = month.abb)) |>
       count(month, .drop = FALSE) |> filter(as.integer(month) %in% 3:8)
+    validate(need(sum(d$n) > 0, "No outmigration detections for this selection."))
     p <- ggplot(d, aes(month, n, text = paste0(month, ": ", n))) +
       geom_col(fill = pal$blue) + geom_text(aes(label = n), vjust = -0.4, size = 4, color = pal$navy) +
       labs(x = NULL, y = "Fish") + theme_okn()
     ggplotly(p, tooltip = "text")
   })
   output$tbl_rec <- renderDT(
-    datatable(rec, rownames = FALSE, options = list(dom = "t", pageLength = 10, scrollX = TRUE)))
+    datatable(rec |> filter(tag_code %in% tags_f()), rownames = FALSE,
+              options = list(dom = "t", pageLength = 10, scrollX = TRUE)))
 
+  # ---- fish explorer ----
   observe({
-    tags <- if (input$fx_fate == "All") pf$tag_code else pf$tag_code[pf$fate == input$fx_fate]
+    base <- pf_f()
+    tags <- if (input$fx_fate == "All") base$tag_code else base$tag_code[base$fate == input$fx_fate]
     sel  <- if ("3DD.003D53EC37" %in% tags) "3DD.003D53EC37" else tags[1]
     updateSelectizeInput(session, "fx_tag", choices = tags, selected = sel, server = TRUE)
   })
@@ -321,12 +416,13 @@ server <- function(input, output, session) {
               options = list(dom = "tp", pageLength = 15),
               colnames = c("Date", "Event", "Site", "Zone")))
 
+  # ---- data tab ----
   output$tbl_perfish <- renderDT(
-    datatable(pf, rownames = FALSE, filter = "top",
+    datatable(pf_f(), rownames = FALSE, filter = "top",
               options = list(pageLength = 15, scrollX = TRUE)))
   output$dl_perfish <- downloadHandler(
     filename = function() "okanagan_steelhead_per_fish.csv",
-    content  = function(file) write_csv(pf, file))
+    content  = function(file) write_csv(pf_f(), file))
 }
 
 shinyApp(ui, server)
