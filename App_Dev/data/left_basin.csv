@@ -1,0 +1,34 @@
+tag_code,release_site,release_year,fate,last_site,last_event,site_path
+3DD.003D53EC37,Vaseux Creek,2022,"confirmed return (adult, natal)",Vaseux Creek,2025-05-27,VASEUX>WEA>ZSL>OKC>OKV
+3DD.003D53E384,Inkaneep Creek,2023,recovered - predation island,Little Miller Island (predation),2024-08-29,INKANC>RRJ>LMILIS
+3DD.003D98A3E4,Shuttleworth Creek,2020,recovered - predation island,Badger Island (predation),2021-09-21,SHUTTC>RRJ>BADGEI
+3DD.0077CDB9CD,Vaseux Creek,2019,recovered - predation island,East Sand Island (predation),2021-09-08,VASEUX>OKV>RRJ>ESANIS
+3DD.0077CE0D38,Vaseux Creek,2019,recovered - predation island,East Sand Island (predation),2022-09-14,VASEUX>OKV>ESANIS
+3DD.0077CFF969,Vaseux Creek,2020,recovered - predation island,Badger Island (predation),2021-09-21,VASEUX>RRJ>BADGEI
+3DD.003D53DA7F,Inkaneep Creek,2022,left basin / outmigrant (no return),Rocky Reach Dam (juv),2023-06-05,INKANC>RRJ
+3DD.003D53DAB3,Inkaneep Creek,2022,left basin / outmigrant (no return),Rocky Reach Dam (juv),2023-05-23,INKANC>OKI>RRJ
+3DD.003D53DABB,Inkaneep Creek,2022,left basin / outmigrant (no return),Columbia estuary rkm62,2023-06-02,INKANC>BCC>PD5
+3DD.003D53DAC4,Inkaneep Creek,2022,left basin / outmigrant (no return),Bonneville Corner Collector,2023-06-14,INKANC>RRJ>BCC
+3DD.003D53DE46,Inkaneep Creek,2022,left basin / outmigrant (no return),Rocky Reach Dam (juv),2023-06-09,INKANC>OKI>RRJ
+3DD.003D53DE76,Vaseux Creek,2022,left basin / outmigrant (no return),Rocky Reach Dam (juv),2024-06-07,VASEUX>OKV>RRJ
+3DD.003D53DE9E,Vaseux Creek,2022,left basin / outmigrant (no return),Ninemile Creek (stray),2026-04-22,VASEUX>ZSL>NMC
+3DD.003D53E31E,Vaseux Creek,2021,left basin / outmigrant (no return),Estuary towed array,2023-05-18,VASEUX>OKV>TWX
+3DD.003D53E376,Inkaneep Creek,2023,left basin / outmigrant (no return),Rocky Reach Dam (juv),2024-06-18,INKANC>ZSL>RRJ
+3DD.003D53EA51,Vaseux Creek,2021,left basin / outmigrant (no return),Rocky Reach Dam (juv),2023-05-04,VASEUX>OKV>RRJ
+3DD.003D98A407,Inkaneep Creek,2020,left basin / outmigrant (no return),Rocky Reach Dam (juv),2021-06-24,INKANC>OKI>ZSL>RRJ
+3DD.003D98A453,Inkaneep Creek,2020,left basin / outmigrant (no return),Rocky Reach Dam (juv),2021-05-31,INKANC>OKI>RRJ
+3DD.003D98A496,Inkaneep Creek,2021,left basin / outmigrant (no return),Rocky Reach Dam (juv),2022-06-04,INKANC>ZSL>RRJ
+3DD.0077CDC6EE,Vaseux Creek,2019,left basin / outmigrant (no return),Rocky Reach Dam (juv),2021-06-18,VASEUX>RRJ
+3DD.0077CDDC87,Vaseux Creek,2019,left basin / outmigrant (no return),Bonneville Corner Collector,2021-06-15,VASEUX>ZSL>RRJ>BCC
+3DD.0077CDEA1E,Vaseux Creek,2019,left basin / outmigrant (no return),Rocky Reach Dam (juv),2020-07-03,VASEUX>RRJ
+3DD.0077CFAC0E,Vaseux Creek,2020,left basin / outmigrant (no return),Rocky Reach Dam (juv),2022-06-14,VASEUX>OKV>OKC>RRJ
+3DD.0077CFBAD7,Inkaneep Creek,2019,left basin / outmigrant (no return),Bonneville Dam (juv),2020-06-29,INKANC>RRJ>B2J
+3DD.0077CFBB1C,Vaseux Creek,2020,left basin / outmigrant (no return),Bonneville Corner Collector,2021-06-04,VASEUX>OKV>RRJ>BCC
+3DD.0077CFC98A,Vaseux Creek,2020,left basin / outmigrant (no return),Rocky Reach Dam (juv),2021-05-27,VASEUX>OKV>OKC>ZSL>RRJ
+3DD.0077CFEE69,Vaseux Creek,2020,left basin / outmigrant (no return),Rocky Reach Dam (juv),2023-05-11,VASEUX>OKV>RRJ
+3DD.0077D007C3,Vaseux Creek,2020,left basin / outmigrant (no return),Rocky Reach Dam (juv),2021-05-27,VASEUX>OKV>RRJ
+3DD.0077D00E12,Vaseux Creek,2020,left basin / outmigrant (no return),Rocky Reach Dam (juv),2021-06-09,VASEUX>RRJ
+3DD.0077D07BF1,Inkaneep Creek,2019,left basin / outmigrant (no return),Rocky Reach Dam (juv),2020-06-06,INKANC>ZSL>RRJ
+3DD.0077D08618,Vaseux Creek,2019,left basin / outmigrant (no return),Rocky Reach Dam (juv),2020-06-04,VASEUX>OKV>RRJ
+3DD.0077D09454,Vaseux Creek,2020,left basin / outmigrant (no return),Rocky Reach Dam (juv),2021-06-08,VASEUX>OKV>OKC>RRJ
+3DD.0077D0A50C,Vaseux Creek,2020,left basin / outmigrant (no return),Rocky Reach Dam (juv),2022-05-12,VASEUX>OKV>RRJ

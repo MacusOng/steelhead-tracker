@@ -1,0 +1,9 @@
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+rsconnect/
+outputs/
+archive/
+*.xlsx
+developer-notes.txt
