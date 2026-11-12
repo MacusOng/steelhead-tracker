@@ -2,6 +2,12 @@
 
 All notable changes to this app. Newest first. Semantic versioning (MAJOR.MINOR.PATCH).
 
+## 0.2.0 — 2026-11-12
+Rebrand to **Where's O Mykiss** with an animated, alternating rainbow-trout / steelhead that swims
+across the title. New "River current" theme (blue→teal gradient navbar, colorful value boxes). Added
+a **Beta** badge, a **Built 2026-11-12 UTC** stamp and **Built by Macus Ong** in the top-right.
+New `App_Dev/www/styles.css`.
+
 ## 0.1.0 — 2026-11-12
 Initial release. Interactive Shiny app for Okanagan steelhead (*O. mykiss*) PIT detections,
 2019+ cohort, built from the event-aware analysis (Mark / Observation / Recapture / Recovery events).

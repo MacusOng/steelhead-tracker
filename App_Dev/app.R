@@ -10,13 +10,17 @@ library(DT)
 library(scales)
 library(viridisLite)
 
+# setwd("C:/Users/mong/OneDrive - Okanagan Nation Alliance/steelhead-tracker")
+# shiny::runApp("App_Dev")
+
 # =====================================================================
 # Let's Follow the Steelhead  —  Okanagan O. mykiss PIT detection explorer
 # Part of the CSS FTT dashboard family (sibling of sockeye-tracker).
 # Data: PTAGIS complete tag history, all event types, 19 Aug 2026.
 # Cohort = fish released 2019+. Dates are as recorded (UTC).
 # =====================================================================
-APP_VERSION <- "0.1.0"
+APP_VERSION <- "0.2.0"
+BUILT_UTC   <- "2026-11-12"
 
 # ---- load data ----
 pf   <- read_csv("data/per_fish.csv",         show_col_types = FALSE)
@@ -51,13 +55,46 @@ theme_okn <- function() {
           legend.position = "bottom")
 }
 
+# ---- animated brand (two fish, alternating; swims across) ----
+fish_svg <- '
+<div class="swim-lane"><div class="swim">
+  <svg class="fish fish-rb" width="60" height="32" viewBox="0 0 64 32">
+    <g class="tail"><path d="M14,16 L2,7 L5,16 L2,25 Z" fill="#6aa0c8"/></g>
+    <ellipse cx="36" cy="16" rx="22" ry="8.5" fill="#8fb98e"/>
+    <path d="M14,17.5 C26,22 50,22 58,16.6 L58,17.4 C50,23 26,23 14,19 Z" fill="#d9e6dd"/>
+    <rect x="16" y="14.6" width="40" height="2.6" rx="1.3" fill="#e8608a" opacity="0.9"/>
+    <path d="M30,8 L42,8 L36,2 Z" fill="#7faa7e"/><path d="M30,25 L40,25 L35,30 Z" fill="#7faa7e"/>
+    <circle cx="24" cy="11" r="1" fill="#3f5d3e"/><circle cx="31" cy="10" r="1" fill="#3f5d3e"/>
+    <circle cx="38" cy="11" r="1" fill="#3f5d3e"/><circle cx="45" cy="12" r="1" fill="#3f5d3e"/>
+    <circle cx="54" cy="13.5" r="1.8" fill="#143"/><circle cx="54.6" cy="13" r="0.6" fill="#fff"/>
+  </svg>
+  <svg class="fish fish-st" width="60" height="32" viewBox="0 0 64 32">
+    <defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9fb2bd"/><stop offset="0.5" stop-color="#d7e1e6"/>
+      <stop offset="1" stop-color="#aebcc4"/></linearGradient></defs>
+    <g class="tail"><path d="M14,16 L2,7 L5,16 L2,25 Z" fill="#9aacb6"/></g>
+    <ellipse cx="36" cy="16" rx="22" ry="8.5" fill="url(#sg)"/>
+    <rect x="16" y="15" width="40" height="1.8" rx="0.9" fill="#b9c6cd" opacity="0.8"/>
+    <path d="M30,8 L42,8 L36,2.5 Z" fill="#9fb2bd"/><path d="M30,25 L40,25 L35,30 Z" fill="#9fb2bd"/>
+    <circle cx="24" cy="12" r="0.8" fill="#6b7b84"/><circle cx="34" cy="11.5" r="0.8" fill="#6b7b84"/>
+    <circle cx="44" cy="12" r="0.8" fill="#6b7b84"/>
+    <circle cx="54" cy="13.5" r="1.8" fill="#14323f"/><circle cx="54.6" cy="13" r="0.6" fill="#fff"/>
+  </svg>
+</div></div>'
+brand_html <- tags$span(
+  class = "brand",
+  HTML(fish_svg),
+  tags$span(class = "brand-title", HTML("Where&#39;s <span class=\"q\">O&nbsp;Mykiss</span>")),
+  tags$span(class = "beta", "Beta"))
+
 # =====================================================================
 # UI
 # =====================================================================
 ui <- page_navbar(
-  title = tags$span(bs_icon("water"), " Let's Follow the Steelhead"),
-  window_title = "Let's Follow the Steelhead",
-  theme = bs_theme(version = 5, primary = pal$navy),
+  title = brand_html,
+  window_title = "Where's O Mykiss",
+  theme = bs_theme(version = 5, primary = "#1f5f9e", secondary = "#1aa37d"),
+  header = tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "styles.css")),
   fillable = FALSE,
 
   nav_panel(
@@ -65,11 +102,11 @@ ui <- page_navbar(
     layout_column_wrap(
       width = 1/5, heights_equal = "row", fill = FALSE,
       value_box("Fish tagged (2019+)", textOutput("kpi_fish"),
-                showcase = bs_icon("tag"), theme = "primary"),
+                showcase = bs_icon("tag"), theme = value_box_theme(bg = "#1f5f9e", fg = "white")),
       value_box("Events tracked", textOutput("kpi_events"),
-                showcase = bs_icon("broadcast"), theme = "secondary"),
+                showcase = bs_icon("broadcast"), theme = value_box_theme(bg = "#1aa37d", fg = "white")),
       value_box("Left the Okanagan", textOutput("kpi_left"),
-                showcase = bs_icon("box-arrow-right")),
+                showcase = bs_icon("box-arrow-right"), theme = value_box_theme(bg = "#e08a2e", fg = "white")),
       value_box("Predation deaths", textOutput("kpi_pred"),
                 showcase = bs_icon("exclamation-triangle"),
                 theme = value_box_theme(bg = pal$red, fg = "white")),
@@ -179,9 +216,11 @@ ui <- page_navbar(
   ),
 
   nav_spacer(),
-  nav_item(tags$span(class = "text-muted small", paste0("v", APP_VERSION))),
+  nav_item(tags$div(class = "navmeta",
+    HTML(paste0("Built <b>", BUILT_UTC, "</b> UTC<br>Built by <b>Macus Ong</b>")))),
+  nav_item(tags$span(class = "vchip", paste0("v", APP_VERSION))),
   nav_item(tags$a(bs_icon("github"), href = "https://github.com/MacusOng/steelhead-tracker",
-                  target = "_blank"))
+                  target = "_blank", class = "ghlink"))
 )
 
 # =====================================================================

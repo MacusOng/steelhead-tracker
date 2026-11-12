@@ -7,3 +7,4 @@ outputs/
 archive/
 *.xlsx
 developer-notes.txt
+.Rproj.user

@@ -1,0 +1,50 @@
+/* Where's O Mykiss — v0.2.0 "River current" theme */
+
+/* ---- navbar: blue -> teal gradient ---- */
+.navbar {
+  background: linear-gradient(90deg, #0e2d49 0%, #1f5f9e 45%, #1aa37d 100%) !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,.18);
+}
+.navbar .nav-link, .navbar .navbar-brand { color: #ffffff !important; }
+.navbar .nav-link:hover { color: #ffd166 !important; }
+.navbar .nav-link.active, .navbar .nav-link[aria-selected="true"] {
+  color: #ffffff !important; border-bottom: 3px solid #ff6b4a;
+}
+.navbar-brand { display: flex; align-items: center; gap: 10px; padding-top: 2px; padding-bottom: 2px; }
+
+/* ---- animated fish ---- */
+.swim-lane { position: relative; width: 116px; height: 34px; overflow: hidden; flex: 0 0 auto; }
+.swim { position: absolute; top: 50%; left: 0; animation: swim 6s linear infinite; }
+@keyframes swim { 0% { transform: translate(-28px,-50%); } 100% { transform: translate(118px,-50%); } }
+.fish { position: absolute; top: -16px; left: 0; }
+.fish-rb { animation: fadeRB 12s ease-in-out infinite; }
+.fish-st { animation: fadeST 12s ease-in-out infinite; }
+@keyframes fadeRB { 0%,42% { opacity: 1; } 50%,92% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes fadeST { 0%,42% { opacity: 0; } 50%,92% { opacity: 1; } 100% { opacity: 0; } }
+.tail { transform-origin: 46px 16px; animation: wag .42s ease-in-out infinite alternate; }
+@keyframes wag { from { transform: rotate(-13deg); } to { transform: rotate(13deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .swim, .tail, .fish-rb, .fish-st { animation: none; }
+  .fish-st { opacity: 0; }
+}
+
+/* ---- brand text ---- */
+.brand-title { font-size: 21px; font-weight: 800; letter-spacing: .2px; color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,.25); }
+.brand-title .q { color: #ffd166; }
+.beta { background: #ff6b4a; color: #fff; font-size: 11px; font-weight: 700;
+  padding: 2px 9px; border-radius: 999px; text-transform: uppercase; letter-spacing: .5px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+
+/* ---- right-side meta ---- */
+.navmeta { text-align: right; line-height: 1.25; font-size: 11.5px; color: #eaf4ff; padding: 4px 4px; }
+.navmeta b { color: #fff; }
+.vchip { display: inline-block; font-size: 11px; color: #e9fbf4; background: rgba(255,255,255,.16);
+  padding: 3px 9px; border-radius: 999px; }
+.ghlink { color: #fff !important; font-size: 18px; }
+
+/* ---- a little more color in the body ---- */
+.card > .card-header { color: #0e2d49; font-weight: 600;
+  border-bottom: 2px solid #1aa37d; background: #f3f8f6; }
+.bslib-value-box .value-box-showcase { opacity: .9; }
+body { background: #f6f9fb; }
