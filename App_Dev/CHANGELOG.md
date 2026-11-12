@@ -2,6 +2,13 @@
 
 All notable changes to this app. Newest first. Semantic versioning (MAJOR.MINOR.PATCH).
 
+## 0.4.0 — 2026-11-12
+Sidebar **Filters / Settings** now a rounded two-column segmented pill. **Theme picker** shows clickable
+palette cards (gradient header + colour strip + name) instead of a dropdown, selected one outlined in
+coral. Top-right **live UTC clock** with a hover **world-clock popover** (Vancouver, Kuala Lumpur,
+London, Sydney, Johannesburg — one per continent). Swimming fish now **tint to the active theme** and
+trail **rising bubbles**.
+
 ## 0.3.0 — 2026-11-12
 Left **sidebar** added across the whole app. **Filters** (release location / stream, mark year,
 release year) now subset every tab, with a live "N of 3,000 fish selected" count and a Reset button.

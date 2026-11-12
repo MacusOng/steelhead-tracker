@@ -17,7 +17,7 @@ library(viridisLite)
 # Data: PTAGIS complete tag history, all event types, 19 Aug 2026.
 # Cohort = fish released 2019+. Dates are as recorded (UTC).
 # =====================================================================
-APP_VERSION <- "0.3.0"
+APP_VERSION <- "0.4.0"
 BUILT_UTC   <- "2026-11-12"
 
 # ---- load data ----
@@ -115,6 +115,7 @@ fish_svg <- '
     <circle cx="44" cy="12" r="0.8" fill="#6b7b84"/>
     <circle cx="54" cy="13.5" r="1.8" fill="#14323f"/><circle cx="54.6" cy="13" r="0.6" fill="#fff"/>
   </svg>
+  <span class="bubble"></span><span class="bubble b2"></span><span class="bubble b3"></span>
 </div></div>'
 brand_html <- tags$span(
   class = "brand",
@@ -123,6 +124,44 @@ brand_html <- tags$span(
   tags$span(class = "beta", "Beta"))
 
 google_fonts <- "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&family=Inter:wght@400;600&family=Rubik&family=DM+Sans&family=Work+Sans&family=Montserrat&family=Oswald&family=Archivo&display=swap"
+
+# ---- theme preview cards (gradient, bg, surface, primary, text) ----
+theme_prev <- list(
+  classic  = c("linear-gradient(90deg,#0e2d49,#1aa37d)","#f6f9fb","#dde7ee","#1f5f9e","#0e2d49"),
+  light    = c("linear-gradient(90deg,#17324e,#1aa37d)","#ffffff","#eef2f4","#1f5f9e","#1a1a1a"),
+  dark     = c("linear-gradient(90deg,#0b0e12,#13343b)","#15181c","#262b31","#3b82f6","#e6edf3"),
+  midnight = c("linear-gradient(90deg,#060a16,#123a58)","#0b1220","#182440","#4f8cff","#cdd9e5"),
+  graphite = c("linear-gradient(90deg,#141416,#4a1f1f)","#1b1b1d","#2c2c30","#e03a3a","#e4e4e6"),
+  forest   = c("linear-gradient(90deg,#0a140d,#1f6b43)","#0f1a12","#1b2b20","#2f9e5e","#d7e6d8"),
+  sand     = c("linear-gradient(90deg,#6b5a33,#b5801f)","#f5efe2","#e6dcc5","#b5801f","#3a2f1e"),
+  highcon  = c("linear-gradient(90deg,#000,#3a3a00)","#000000","#1a1a1a","#ffd400","#ffffff"))
+theme_card <- function(key) {
+  p <- theme_prev[[key]]; lab <- names(theme_choices)[theme_choices == key]
+  HTML(sprintf(paste0('<div class="tcard"><div class="hd" style="background:%s"></div>',
+    '<div class="sw"><i style="background:%s"></i><i style="background:%s"></i>',
+    '<i style="background:%s"></i><i style="background:%s"></i></div>',
+    '<div class="nm">%s</div></div>'),
+    p[1], p[2], p[3], p[4], p[5], lab))
+}
+theme_names_ui <- lapply(unname(theme_choices), theme_card)
+
+# ---- live clocks (top-right UTC + world-clock popover) ----
+clock_html <- HTML(paste0(
+  '<div class="clockbox"><div class="clk-head"><span class="clk-label">UTC</span>&nbsp;',
+  '<span class="clk" data-tz="UTC">--:--:--</span><span class="byline"> · Macus Ong</span></div>',
+  '<div class="worldclocks">',
+  '<div class="row"><span>Vancouver</span><span data-tz="America/Vancouver">--</span></div>',
+  '<div class="row"><span>Kuala Lumpur</span><span data-tz="Asia/Kuala_Lumpur">--</span></div>',
+  '<div class="row"><span>London</span><span data-tz="Europe/London">--</span></div>',
+  '<div class="row"><span>Sydney</span><span data-tz="Australia/Sydney">--</span></div>',
+  '<div class="row"><span>Johannesburg</span><span data-tz="Africa/Johannesburg">--</span></div>',
+  '</div></div>'))
+clock_js <- HTML(paste0(
+  "(function(){function tick(){var now=new Date();",
+  "document.querySelectorAll('[data-tz]').forEach(function(el){try{",
+  "el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:el.dataset.tz,",
+  "hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(now);}catch(e){}});}",
+  "setInterval(tick,1000);tick();setTimeout(tick,400);})();"))
 
 # =====================================================================
 # UI
@@ -138,15 +177,15 @@ ui <- page_navbar(
       tags$link(rel = "preconnect", href = "https://fonts.googleapis.com"),
       tags$link(rel = "preconnect", href = "https://fonts.gstatic.com", crossorigin = ""),
       tags$link(rel = "stylesheet", href = google_fonts),
-      tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"))
+      tags$link(rel = "stylesheet", type = "text/css", href = "styles.css")),
+    tags$script(clock_js)
   ),
 
   sidebar = sidebar(
     width = 320,
-    accordion(
-      open = "Filters",
-      accordion_panel(
-        "Filters", icon = bs_icon("funnel"),
+    navset_pill(
+      nav_panel(
+        "Filters",
         selectInput("f_loc", "Release location (stream)", choices = locs,
                     selected = locs, multiple = TRUE),
         sliderInput("f_mark", "Mark year", min = my_min, max = my_max,
@@ -156,9 +195,12 @@ ui <- page_navbar(
         actionButton("f_reset", "Reset filters", class = "btn-sm btn-outline-secondary"),
         tags$div(class = "filt-count text-muted small mt-2", textOutput("f_count"))
       ),
-      accordion_panel(
-        "Settings", icon = bs_icon("gear"),
-        radioButtons("theme", "Theme", choices = theme_choices, selected = "classic"),
+      nav_panel(
+        "Settings",
+        tags$label(class = "form-label fw-semibold mt-1", "Theme"),
+        tags$div(class = "theme-picker",
+          radioButtons("theme", NULL, choiceNames = theme_names_ui,
+                       choiceValues = unname(theme_choices), selected = "classic")),
         selectInput("font", "Interface font", choices = names(font_stacks),
                     selected = "Space Grotesk"),
         tags$div(class = "font-preview", id = "fontPreview",
@@ -269,8 +311,7 @@ ui <- page_navbar(
   ),
 
   nav_spacer(),
-  nav_item(tags$div(class = "navmeta",
-    HTML(paste0("Built <b>", BUILT_UTC, "</b> UTC<br>Built by <b>Macus Ong</b>")))),
+  nav_item(clock_html),
   nav_item(tags$span(class = "vchip", paste0("v", APP_VERSION))),
   nav_item(tags$a(bs_icon("github"), href = "https://github.com/MacusOng/steelhead-tracker",
                   target = "_blank", class = "ghlink"))
