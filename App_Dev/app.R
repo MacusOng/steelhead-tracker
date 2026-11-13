@@ -17,7 +17,7 @@ library(viridisLite)
 # Data: PTAGIS complete tag history, all event types, 19 Aug 2026.
 # Cohort = fish released 2019+. Dates are as recorded (UTC).
 # =====================================================================
-APP_VERSION <- "0.4.0"
+APP_VERSION <- "0.5.0"
 BUILT_UTC   <- "2026-11-12"
 
 # ---- load data ----
@@ -148,7 +148,7 @@ theme_names_ui <- lapply(unname(theme_choices), theme_card)
 # ---- live clocks (top-right UTC + world-clock popover) ----
 clock_html <- HTML(paste0(
   '<div class="clockbox"><div class="clk-head"><span class="clk-label">UTC</span>&nbsp;',
-  '<span class="clk" data-tz="UTC">--:--:--</span><span class="byline"> · Macus Ong</span></div>',
+  '<span class="clk" data-tz="UTC" data-full="1">-------  --:--:--</span><span class="byline"> · Macus Ong</span></div>',
   '<div class="worldclocks">',
   '<div class="row"><span>Vancouver</span><span data-tz="America/Vancouver">--</span></div>',
   '<div class="row"><span>Kuala Lumpur</span><span data-tz="Asia/Kuala_Lumpur">--</span></div>',
@@ -159,9 +159,24 @@ clock_html <- HTML(paste0(
 clock_js <- HTML(paste0(
   "(function(){function tick(){var now=new Date();",
   "document.querySelectorAll('[data-tz]').forEach(function(el){try{",
+  "if(el.hasAttribute('data-full')){",
+  "el.textContent=new Intl.DateTimeFormat('en-CA',{timeZone:el.dataset.tz,year:'numeric',month:'2-digit',",
+  "day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(now).replace(', ',' ');",
+  "}else{",
   "el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:el.dataset.tz,",
-  "hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(now);}catch(e){}});}",
+  "hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(now);}",
+  "}catch(e){}});}",
   "setInterval(tick,1000);tick();setTimeout(tick,400);})();"))
+
+# ---- animated seabird banner for the Outmigration & predation tab ----
+seabird_html <- paste0(
+  '<div class="seabanner"><div class="waterline"></div>',
+  '<svg class="gull g1" viewBox="0 0 40 22"><g><path class="wl" d="M20,12 Q11,3 2,12" stroke="#33434f" stroke-width="2.4" fill="none" stroke-linecap="round"/><path class="wr" d="M20,12 Q29,3 38,12" stroke="#33434f" stroke-width="2.4" fill="none" stroke-linecap="round"/></g></svg>',
+  '<svg class="gull g2" viewBox="0 0 40 22"><g><path class="wl" d="M20,12 Q11,3 2,12" stroke="#3b4a56" stroke-width="2.6" fill="none" stroke-linecap="round"/><path class="wr" d="M20,12 Q29,3 38,12" stroke="#3b4a56" stroke-width="2.6" fill="none" stroke-linecap="round"/></g></svg>',
+  '<svg class="gull g3" viewBox="0 0 40 22"><g><path class="wl" d="M20,12 Q11,3 2,12" stroke="#4a5864" stroke-width="2.6" fill="none" stroke-linecap="round"/><path class="wr" d="M20,12 Q29,3 38,12" stroke="#4a5864" stroke-width="2.6" fill="none" stroke-linecap="round"/></g></svg>',
+  '<svg class="diver" viewBox="0 0 44 22"><g><path d="M22,12 Q12,2 2,12" stroke="#2b3a46" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M22,12 Q32,2 42,12" stroke="#2b3a46" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M20,12 L24,12 L23,15 Z" fill="#e0a21a"/></g></svg>',
+  '<svg class="prey" width="26" height="14" viewBox="0 0 34 16"><ellipse cx="19" cy="8" rx="12" ry="4.5" fill="#9fb9c9"/><path d="M8,8 L1,4 L3,8 L1,12 Z" fill="#9fb9c9"/><circle cx="27" cy="7" r="1" fill="#143"/></svg>',
+  '<div class="capt">Smolts outmigrating past Columbia bird colonies</div></div>')
 
 # =====================================================================
 # UI
@@ -231,7 +246,8 @@ ui <- page_navbar(
       were recovered dead on Columbia predation islands. Individual fish are **not** labelled
       steelhead vs rainbow — detections cannot resolve that.")),
     card(card_header("Fate of the selected fish"),
-         plotlyOutput("plot_fate", height = "330px"), DTOutput("tbl_fate"))
+         plotlyOutput("plot_fate", height = "330px"), DTOutput("tbl_fate")),
+    tags$div(class = "provenance", textOutput("prov_overview"))
   ),
 
   nav_panel(
@@ -253,6 +269,8 @@ ui <- page_navbar(
 
   nav_panel(
     "Outmigration & predation", icon = bs_icon("box-arrow-right"),
+    tags$div(class = "seabanner-wrap", HTML(seabird_html)),
+    card(card_header("What do these numbers mean?"), uiOutput("wnm")),
     layout_column_wrap(
       width = 1/2,
       card(card_header("Outmigration timing (first downstream detection)"),
@@ -263,7 +281,8 @@ ui <- page_navbar(
       "Five of the fish that left were recovered dead on Columbia River **bird-predation islands**
       (East Sand, Badger, Little Miller) — direct evidence of **avian predation of outmigrating
       smolts**. Combined with near-zero detected returns, this underlines how little of the
-      population survives the seaward journey."))
+      population survives the seaward journey.")),
+    tags$div(class = "provenance", textOutput("prov_pred"))
   ),
 
   nav_panel(
@@ -337,6 +356,48 @@ server <- function(input, output, session) {
     updateSelectInput(session, "f_loc", selected = locs)
     updateSliderInput(session, "f_mark", value = c(my_min, my_max))
     updateSliderInput(session, "f_rel",  value = c(ry_min, ry_max))
+  })
+
+  # ---- provenance footer (filters + version + generated time) ----
+  prov_text <- reactive({
+    loc <- if (length(input$f_loc) == length(locs)) "all locations"
+           else paste(input$f_loc, collapse = ", ")
+    gen <- format(as.POSIXlt(Sys.time(), tz = "UTC"), "%Y-%m-%d %H:%M:%S")
+    paste0("Filters: ", loc,
+           " | Mark ", input$f_mark[1], "–", input$f_mark[2],
+           " | Release ", input$f_rel[1], "–", input$f_rel[2],
+           "  ·  v", APP_VERSION, "  ·  Generated ", gen, " UTC")
+  })
+  output$prov_overview <- renderText(prov_text())
+  output$prov_pred     <- renderText(prov_text())
+
+  # ---- plain-language "what do the numbers mean" ----
+  output$wnm <- renderUI({
+    d <- pf_f(); total <- nrow(d)
+    left <- sum(d$left_basin == "Y", na.rm = TRUE)
+    pred <- sum(d$fate == "recovered - predation island")
+    ret  <- sum(startsWith(d$fate, "confirmed return"))
+    noret <- max(0, left - pred - ret)
+    if (left == 0)
+      return(HTML(paste0("<p>Of the <b>", format(total, big.mark = ","),
+        "</b> fish in your current selection, none were detected leaving the Okanagan toward the ocean, ",
+        "so there is nothing to summarise here yet. Widen the filters to include more fish.</p>")))
+    pc <- function(n) round(100 * n / left)
+    para <- sprintf(paste0(
+      "<p>You've selected <b>%s</b> tagged fish. <b>%d</b> were detected leaving the Okanagan toward ",
+      "the ocean. Of those that left: <b>%d (%d%%)</b> were recovered dead on Columbia bird-predation ",
+      "islands — confirmed eaten by seabirds; <b>%d (%d%%)</b> were never seen again (fate unknown); ",
+      "and <b>%d (%d%%)</b> made the full journey home to spawn.</p>"),
+      format(total, big.mark = ","), left, pred, pc(pred), noret, pc(noret), ret, pc(ret))
+    seg <- function(w, col) sprintf('<div class="seg" style="width:%d%%;background:%s">%s</div>',
+                                    w, col, if (w >= 8) paste0(w, "%") else "")
+    bar <- paste0('<p class="wnm-sub"><b>Of the fish that left the Okanagan:</b></p><div class="flbar">',
+      seg(pc(pred), "#9E2B25"), seg(pc(noret), "#c98a5a"), seg(pc(ret), "#1E6B3A"),
+      '</div><div class="leg">',
+      '<span><i style="background:#9E2B25"></i>Eaten by birds (', pred, ')</span>',
+      '<span><i style="background:#c98a5a"></i>Never seen again (', noret, ')</span>',
+      '<span><i style="background:#1E6B3A"></i>Returned home (', ret, ')</span></div>')
+    HTML(paste0(para, bar))
   })
 
   # ---- theme & font ----

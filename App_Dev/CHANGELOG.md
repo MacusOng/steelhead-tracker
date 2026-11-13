@@ -2,6 +2,14 @@
 
 All notable changes to this app. Newest first. Semantic versioning (MAJOR.MINOR.PATCH).
 
+## 0.5.0 — 2026-11-12
+Top-right clock now shows **date and time** (YYYY-MM-DD HH:MM:SS UTC). Added a **provenance footer**
+under the plots on the Overview and Outmigration tabs: active filters, app version, and a
+"Generated YYYY-MM-DD HH:MM:SS UTC" stamp. **Outmigration & predation** tab gained an animated
+**seabird banner** (flapping gulls + a diving tern snatching a smolt) and a plain-language
+**"What do these numbers mean?"** card that turns the current selection into a sentence plus a simple
+proportion bar (eaten by birds / never seen again / returned home).
+
 ## 0.4.0 — 2026-11-12
 Sidebar **Filters / Settings** now a rounded two-column segmented pill. **Theme picker** shows clickable
 palette cards (gradient header + colour strip + name) instead of a dropdown, selected one outlined in
