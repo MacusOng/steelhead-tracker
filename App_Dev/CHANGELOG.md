@@ -2,6 +2,12 @@
 
 All notable changes to this app. Newest first. Semantic versioning (MAJOR.MINOR.PATCH).
 
+## 0.6.1 — 2026-11-13
+Export fixes. The version/Generated footer is now positioned by a fixed pixel offset below the plot, so it
+appears on **every** plot (tall plots such as the presence heat map previously pushed it out of view). Axes
+auto-size their margins so long site names and titles are no longer cut off, and legends moved above the
+plot. PNG export is now 2x resolution.
+
 ## 0.6.0 — 2026-11-13
 New **Stories** tab: two hero cards — *The one that came home* (the single confirmed natal return) and
 *One that didn't make it* (an East Sand Island predation loss) — each with a **Trace this fish in Fish

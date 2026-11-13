@@ -17,7 +17,7 @@ library(viridisLite)
 # Data: PTAGIS complete tag history, all event types, 19 Aug 2026.
 # Cohort = fish released 2019+. Dates are as recorded (UTC).
 # =====================================================================
-APP_VERSION <- "0.6.0"
+APP_VERSION <- "0.6.1"
 BUILT_UTC   <- "2026-11-12"
 
 # ---- load data ----
@@ -84,14 +84,21 @@ theme_okn <- function(col = list(bg="#ffffff", fg="#222", grid="#e6e6e6")) {
 # and paint its background to match the active theme
 stamp_fig <- function(p, col = list(bg="#ffffff", fg="#333")) {
   gen <- format(as.POSIXlt(Sys.time(), tz = "UTC"), "%Y-%m-%d %H:%M:%S")
+  # Footer is placed with a PIXEL offset (yshift) from the bottom of the plot area, so it
+  # lands in the same spot on every plot regardless of height. Axes use automargin so long
+  # labels (site names, titles) are never clipped; legend moves to the top.
   p |> plotly::layout(
     paper_bgcolor = col$bg, plot_bgcolor = col$bg, font = list(color = col$fg),
-    margin = list(b = 78),
+    margin = list(l = 20, r = 30, t = 56, b = 100, pad = 4),
+    xaxis = list(automargin = TRUE, title = list(standoff = 10)),
+    yaxis = list(automargin = TRUE, title = list(standoff = 10)),
+    legend = list(orientation = "h", x = 0, y = 1.02, xanchor = "left", yanchor = "bottom"),
     annotations = list(list(
-      text = paste0("Where's O Mykiss v", APP_VERSION, "  ·  Generated ", gen, " UTC"),
-      x = 1, y = -0.30, xref = "paper", yref = "paper",
+      text = paste0("Where's O Mykiss v", APP_VERSION, "  \u00b7  Generated ", gen, " UTC"),
+      x = 1, y = 0, xref = "paper", yref = "paper", yshift = -78,
       xanchor = "right", yanchor = "top", showarrow = FALSE,
-      font = list(size = 10, color = col$fg))))
+      font = list(size = 10, color = col$fg)))) |>
+    plotly::config(toImageButtonOptions = list(format = "png", scale = 2, filename = "wheres_o_mykiss"))
 }
 
 # ---- 8 themes ----
