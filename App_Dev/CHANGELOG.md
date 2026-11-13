@@ -2,6 +2,18 @@
 
 All notable changes to this app. Newest first. Semantic versioning (MAJOR.MINOR.PATCH).
 
+## 0.6.0 — 2026-11-13
+New **Stories** tab: two hero cards — *The one that came home* (the single confirmed natal return) and
+*One that didn't make it* (an East Sand Island predation loss) — each with a **Trace this fish in Fish
+explorer** button that jumps to its timeline; plus an auto-rotating **notable-fish** showcase. **Dark
+themes now theme the charts** (dark panels, light text/gridlines) and the data tables, so nothing
+renders as a bright white box. (Includes the v0.5.1 in-figure export stamp.)
+
+## 0.5.1 — 2026-11-13
+Every plot now carries an in-figure stamp (`Where's O Mykiss vX.Y.Z · Generated YYYY-MM-DD HH:MM:SS UTC`)
+so the version and generation time ride along in the PNG you export from the plot toolbar — not just the
+on-screen footer.
+
 ## 0.5.0 — 2026-11-12
 Top-right clock now shows **date and time** (YYYY-MM-DD HH:MM:SS UTC). Added a **provenance footer**
 under the plots on the Overview and Outmigration tabs: active filters, app version, and a

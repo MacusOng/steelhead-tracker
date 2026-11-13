@@ -17,7 +17,7 @@ library(viridisLite)
 # Data: PTAGIS complete tag history, all event types, 19 Aug 2026.
 # Cohort = fish released 2019+. Dates are as recorded (UTC).
 # =====================================================================
-APP_VERSION <- "0.5.0"
+APP_VERSION <- "0.6.0"
 BUILT_UTC   <- "2026-11-12"
 
 # ---- load data ----
@@ -55,11 +55,43 @@ locs   <- sort(unique(pf$release_site))
 ry_min <- min(pf$release_year, na.rm = TRUE); ry_max <- max(pf$release_year, na.rm = TRUE)
 my_min <- min(pf$mark_year,   na.rm = TRUE);  my_max <- max(pf$mark_year,   na.rm = TRUE)
 
-theme_okn <- function() {
+# plot background/foreground per theme, so charts match (no white boxes on dark themes)
+plot_theme_cols <- list(
+  classic  = list(bg="#ffffff", fg="#0e2d49", grid="#e4e9ee"),
+  light    = list(bg="#ffffff", fg="#1a1a1a", grid="#e4e4e4"),
+  dark     = list(bg="#15181c", fg="#e6edf3", grid="#333a42"),
+  midnight = list(bg="#0b1220", fg="#cdd9e5", grid="#1e2b45"),
+  graphite = list(bg="#1b1b1d", fg="#e4e4e6", grid="#34343a"),
+  forest   = list(bg="#0f1a12", fg="#d7e6d8", grid="#24352a"),
+  sand     = list(bg="#f5efe2", fg="#3a2f1e", grid="#e0d6c0"),
+  highcon  = list(bg="#000000", fg="#ffffff", grid="#333300"))
+
+theme_okn <- function(col = list(bg="#ffffff", fg="#222", grid="#e6e6e6")) {
   theme_minimal(base_size = 13) +
-    theme(panel.grid.minor = element_blank(),
-          plot.title = element_text(face = "bold"),
-          legend.position = "bottom")
+    theme(plot.background   = element_rect(fill = col$bg, color = NA),
+          panel.background  = element_rect(fill = col$bg, color = NA),
+          panel.grid.major  = element_line(color = col$grid),
+          panel.grid.minor  = element_blank(),
+          text              = element_text(color = col$fg),
+          axis.text         = element_text(color = col$fg),
+          plot.title        = element_text(face = "bold", color = col$fg),
+          legend.background = element_rect(fill = col$bg, color = NA),
+          legend.key        = element_rect(fill = col$bg, color = NA),
+          legend.position   = "bottom")
+}
+
+# stamp a plotly figure with version + generated time (rides along in the PNG export),
+# and paint its background to match the active theme
+stamp_fig <- function(p, col = list(bg="#ffffff", fg="#333")) {
+  gen <- format(as.POSIXlt(Sys.time(), tz = "UTC"), "%Y-%m-%d %H:%M:%S")
+  p |> plotly::layout(
+    paper_bgcolor = col$bg, plot_bgcolor = col$bg, font = list(color = col$fg),
+    margin = list(b = 78),
+    annotations = list(list(
+      text = paste0("Where's O Mykiss v", APP_VERSION, "  ·  Generated ", gen, " UTC"),
+      x = 1, y = -0.30, xref = "paper", yref = "paper",
+      xanchor = "right", yanchor = "top", showarrow = FALSE,
+      font = list(size = 10, color = col$fg))))
 }
 
 # ---- 8 themes ----
@@ -178,10 +210,29 @@ seabird_html <- paste0(
   '<svg class="prey" width="26" height="14" viewBox="0 0 34 16"><ellipse cx="19" cy="8" rx="12" ry="4.5" fill="#9fb9c9"/><path d="M8,8 L1,4 L3,8 L1,12 Z" fill="#9fb9c9"/><circle cx="27" cy="7" r="1" fill="#143"/></svg>',
   '<div class="capt">Smolts outmigrating past Columbia bird colonies</div></div>')
 
+# ---- rotating "notable fish" showcase (Stories tab) ----
+notable <- list(
+  c("3DD.003D53EC37","nb-green","Returned","Vaseux Creek → Wells adult ladder (May 2024) → home to spawn in 2025. The only confirmed round trip."),
+  c("3DD.0077CDB9CD","nb-red","Predation","Outmigrated past Rocky Reach in 2020; tag recovered at East Sand Island — eaten by birds in the estuary."),
+  c("3DD.0077CFF969","nb-red","Predation","Left from Vaseux (2020); recovered at Badger Island in the McNary pool, 2021."),
+  c("3DD.003D53E384","nb-red","Predation","From Inkaneep (2023); recovered at Little Miller Island, 2024."),
+  c("3DD.0077CE1DF3","nb-amber","In-basin","Recovered in its natal Shingle Creek the same year it was tagged — never left the Okanagan."))
+notable_html <- HTML(paste0('<div class="nb-carousel" id="nbCarousel">',
+  paste0(vapply(seq_along(notable), function(i) {
+    x <- notable[[i]]
+    sprintf('<div class="nb-slide%s"><div class="nb-top"><span class="nb-tag">%s</span><span class="nb-badge %s">%s</span></div><div class="nb-line">%s</div></div>',
+            if (i == 1) " active" else "", x[1], x[2], x[3], x[4])
+  }, character(1)), collapse = ""), '</div>'))
+carousel_js <- HTML(paste0(
+  "(function(){var i=0;function rot(){var s=document.querySelectorAll('#nbCarousel .nb-slide');",
+  "if(!s.length)return;s[i].classList.remove('active');i=(i+1)%s.length;s[i].classList.add('active');}",
+  "setInterval(rot,5000);})();"))
+
 # =====================================================================
 # UI
 # =====================================================================
 ui <- page_navbar(
+  id = "mainnav",
   title = brand_html,
   window_title = "Where's O Mykiss",
   theme = themes[["classic"]],
@@ -193,7 +244,7 @@ ui <- page_navbar(
       tags$link(rel = "preconnect", href = "https://fonts.gstatic.com", crossorigin = ""),
       tags$link(rel = "stylesheet", href = google_fonts),
       tags$link(rel = "stylesheet", type = "text/css", href = "styles.css")),
-    tags$script(clock_js)
+    tags$script(clock_js), tags$script(carousel_js)
   ),
 
   sidebar = sidebar(
@@ -248,6 +299,28 @@ ui <- page_navbar(
     card(card_header("Fate of the selected fish"),
          plotlyOutput("plot_fate", height = "330px"), DTOutput("tbl_fate")),
     tags$div(class = "provenance", textOutput("prov_overview"))
+  ),
+
+  nav_panel(
+    "Stories", icon = bs_icon("book"),
+    layout_column_wrap(
+      width = 1/2,
+      card(class = "story-card story-win",
+        card_header("The one that came home"),
+        markdown("Tagged as a juvenile in **Vaseux Creek** (Sept 2022), this fish went to sea, climbed the
+          **Wells Dam adult ladder in May 2024** on its way back, passed **Zosel Dam** in spring 2025, and
+          returned to **Vaseux Creek** in April–May 2025 to spawn — natal homing, confirmed by
+          detections alone. The one fish in the whole 2019+ cohort that completed the full round trip."),
+        actionButton("trace_return", "Trace this fish in Fish explorer →", class = "btn-sm btn-success")),
+      card(class = "story-card story-loss",
+        card_header("One that didn't make it"),
+        markdown("Tagged in **Vaseux Creek** (Sept 2019), this smolt outmigrated past **Rocky Reach Dam**
+          in June 2020. Its tag was **recovered at East Sand Island** in the Columbia estuary in 2021 —
+          eaten by birds. It never returned: the common outcome, and one of five confirmed lost to predation."),
+        actionButton("trace_loss", "Trace this fish in Fish explorer →", class = "btn-sm btn-danger"))
+    ),
+    card(card_header("More notable fish"), notable_html,
+         card_footer(class = "text-muted", "Auto-rotating · find any fish in Fish explorer."))
   ),
 
   nav_panel(
@@ -340,6 +413,12 @@ ui <- page_navbar(
 # SERVER
 # =====================================================================
 server <- function(input, output, session) {
+  cur_cols <- reactive({
+    tk <- input$theme
+    if (is.null(tk) || !(tk %in% names(plot_theme_cols))) tk <- "classic"
+    plot_theme_cols[[tk]]
+  })
+
 
   # ---- global filters ----
   pf_f <- reactive({
@@ -425,12 +504,13 @@ server <- function(input, output, session) {
       arrange(match(fate, fate_order))
   })
   output$plot_fate <- renderPlotly({
+    col <- cur_cols()
     d <- fate_tbl() |> mutate(fate = factor(fate, levels = rev(fate_order)))
     p <- ggplot(d, aes(fate, n_fish, fill = fate, text = paste0(fate, ": ", n_fish))) +
       geom_col() + coord_flip() +
       scale_fill_manual(values = fate_cols, guide = "none") +
-      scale_y_continuous(labels = comma) + labs(x = NULL, y = "Number of fish") + theme_okn()
-    ggplotly(p, tooltip = "text") |> layout(showlegend = FALSE)
+      scale_y_continuous(labels = comma) + labs(x = NULL, y = "Number of fish") + theme_okn(col)
+    ggplotly(p, tooltip = "text") |> layout(showlegend = FALSE) |> stamp_fig(col)
   })
   output$tbl_fate <- renderDT(
     datatable(fate_tbl(), rownames = FALSE, options = list(dom = "t", pageLength = 10),
@@ -441,6 +521,7 @@ server <- function(input, output, session) {
 
   # ---- tributary timing ----
   output$plot_timing <- renderPlotly({
+    col <- cur_cols()
     req(input$tim_creeks)
     d <- ev_f() |> filter(event_type == "Observation", site_code %in% input$tim_creeks) |>
       group_by(tag_code, site_code) |> summarise(doy = min(doy), .groups = "drop") |>
@@ -455,12 +536,13 @@ server <- function(input, output, session) {
       scale_fill_manual(values = creek_pal, guide = "none") +
       scale_x_continuous(breaks = c(1,32,60,91,121,152,182,213,244,274,305,335),
                          labels = month.abb, limits = c(1, 366)) +
-      labs(x = "Day of year (first detection)", y = NULL) + theme_okn()
-    ggplotly(p, tooltip = "text")
+      labs(x = "Day of year (first detection)", y = NULL) + theme_okn(col)
+    ggplotly(p, tooltip = "text") |> stamp_fig(col)
   })
 
   # ---- presence ----
   output$plot_heat <- renderPlotly({
+    col <- cur_cols()
     d <- ev_f() |> filter(event_type == "Observation") |>
       group_by(site_name, event_year) |> summarise(fish = n_distinct(tag_code), .groups = "drop")
     validate(need(nrow(d) > 0, "No detections for this selection."))
@@ -468,23 +550,24 @@ server <- function(input, output, session) {
     d <- d |> mutate(site_name = factor(site_name, levels = ord))
     p <- ggplot(d, aes(factor(event_year), site_name, fill = fish,
                        text = paste0(site_name, " · ", event_year, ": ", fish, " fish"))) +
-      geom_tile(color = "white") + geom_text(aes(label = fish), size = 3, color = "grey30") +
+      geom_tile(color = "white") + geom_text(aes(label = fish), size = 3, color = col$fg) +
       scale_fill_viridis_c(option = "magma", direction = -1, name = "Fish") +
-      labs(x = NULL, y = NULL) + theme_okn() + theme(legend.position = "right")
-    ggplotly(p, tooltip = "text")
+      labs(x = NULL, y = NULL) + theme_okn(col) + theme(legend.position = "right")
+    ggplotly(p, tooltip = "text") |> stamp_fig(col)
   })
 
   # ---- outmigration ----
   output$plot_out <- renderPlotly({
+    col <- cur_cols()
     d <- ev_f() |> filter(site_code %in% down_sites) |>
       group_by(tag_code) |> summarise(dt = min(event_date), .groups = "drop") |>
       mutate(month = factor(format(dt, "%b"), levels = month.abb)) |>
       count(month, .drop = FALSE) |> filter(as.integer(month) %in% 3:8)
     validate(need(sum(d$n) > 0, "No outmigration detections for this selection."))
     p <- ggplot(d, aes(month, n, text = paste0(month, ": ", n))) +
-      geom_col(fill = pal$blue) + geom_text(aes(label = n), vjust = -0.4, size = 4, color = pal$navy) +
-      labs(x = NULL, y = "Fish") + theme_okn()
-    ggplotly(p, tooltip = "text")
+      geom_col(fill = pal$blue) + geom_text(aes(label = n), vjust = -0.4, size = 4, color = col$fg) +
+      labs(x = NULL, y = "Fish") + theme_okn(col)
+    ggplotly(p, tooltip = "text") |> stamp_fig(col)
   })
   output$tbl_rec <- renderDT(
     datatable(rec |> filter(tag_code %in% tags_f()), rownames = FALSE,
@@ -494,15 +577,26 @@ server <- function(input, output, session) {
   observe({
     base <- pf_f()
     tags <- if (input$fx_fate == "All") base$tag_code else base$tag_code[base$fate == input$fx_fate]
-    sel  <- if ("3DD.003D53EC37" %in% tags) "3DD.003D53EC37" else tags[1]
+    cur  <- isolate(input$fx_tag)
+    sel  <- if (!is.null(cur) && cur %in% tags) cur
+            else if ("3DD.003D53EC37" %in% tags) "3DD.003D53EC37" else tags[1]
     updateSelectizeInput(session, "fx_tag", choices = tags, selected = sel, server = TRUE)
   })
+
+  trace_to <- function(tag) {
+    updateSelectInput(session, "fx_fate", selected = "All")
+    updateSelectizeInput(session, "fx_tag", choices = pf$tag_code, selected = tag, server = TRUE)
+    nav_select("mainnav", "Fish explorer")
+  }
+  observeEvent(input$trace_return, trace_to("3DD.003D53EC37"))
+  observeEvent(input$trace_loss,   trace_to("3DD.0077CDB9CD"))
   fx_row <- reactive({ req(input$fx_tag); pf[pf$tag_code == input$fx_tag, ][1, ] })
   fx_ev  <- reactive({ req(input$fx_tag); ev[ev$tag_code == input$fx_tag, ] |> arrange(event_date) })
   output$fx_release  <- renderText(paste0(fx_row()$release_site, " (", fx_row()$release_year, ")"))
   output$fx_fate_txt <- renderText(fx_row()$fate)
   output$fx_nevents  <- renderText(nrow(fx_ev()))
   output$fx_timeline <- renderPlotly({
+    col <- cur_cols()
     d <- fx_ev(); validate(need(nrow(d) > 0, "No events."))
     d <- d |> mutate(site_name = factor(site_name, levels = unique(site_name)))
     p <- ggplot(d, aes(event_date, site_name, color = event_type,
@@ -510,8 +604,8 @@ server <- function(input, output, session) {
       geom_line(aes(group = 1), color = "grey70") + geom_point(size = 3) +
       scale_color_manual(values = c(Mark = pal$grey, Observation = pal$blue,
                                     Recapture = pal$orange, Recovery = pal$red), name = NULL) +
-      labs(x = NULL, y = NULL) + theme_okn()
-    ggplotly(p, tooltip = "text")
+      labs(x = NULL, y = NULL) + theme_okn(col)
+    ggplotly(p, tooltip = "text") |> stamp_fig(col)
   })
   output$fx_events <- renderDT(
     datatable(fx_ev() |> select(event_date, event_type, site_name, zone), rownames = FALSE,
