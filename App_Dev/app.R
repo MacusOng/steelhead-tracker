@@ -17,7 +17,7 @@ library(viridisLite)
 # Data: PTAGIS complete tag history, all event types, 19 Aug 2026.
 # Cohort = fish released 2019+. Dates are as recorded (UTC).
 # =====================================================================
-APP_VERSION <- "0.6.1"
+APP_VERSION <- "0.7.0"
 BUILT_UTC   <- "2026-11-12"
 
 # ---- load data ----
@@ -82,21 +82,22 @@ theme_okn <- function(col = list(bg="#ffffff", fg="#222", grid="#e6e6e6")) {
 
 # stamp a plotly figure with version + generated time (rides along in the PNG export),
 # and paint its background to match the active theme
-stamp_fig <- function(p, col = list(bg="#ffffff", fg="#333")) {
+stamp_fig <- function(p, col = list(bg="#ffffff", fg="#333"), filt = NULL) {
   gen <- format(as.POSIXlt(Sys.time(), tz = "UTC"), "%Y-%m-%d %H:%M:%S")
   # Footer is placed with a PIXEL offset (yshift) from the bottom of the plot area, so it
   # lands in the same spot on every plot regardless of height. Axes use automargin so long
   # labels (site names, titles) are never clipped; legend moves to the top.
   p |> plotly::layout(
     paper_bgcolor = col$bg, plot_bgcolor = col$bg, font = list(color = col$fg),
-    margin = list(l = 20, r = 30, t = 56, b = 100, pad = 4),
+    margin = list(l = 20, r = 30, t = 56, b = 112, pad = 4),
     xaxis = list(automargin = TRUE, title = list(standoff = 10)),
     yaxis = list(automargin = TRUE, title = list(standoff = 10)),
     legend = list(orientation = "h", x = 0, y = 1.02, xanchor = "left", yanchor = "bottom"),
     annotations = list(list(
-      text = paste0("Where's O Mykiss v", APP_VERSION, "  \u00b7  Generated ", gen, " UTC"),
+      text = paste0(if (!is.null(filt)) paste0(filt, "<br>"),
+                    "Where's O Mykiss v", APP_VERSION, "  \u00b7  Generated ", gen, " UTC"),
       x = 1, y = 0, xref = "paper", yref = "paper", yshift = -78,
-      xanchor = "right", yanchor = "top", showarrow = FALSE,
+      xanchor = "right", yanchor = "top", align = "right", showarrow = FALSE,
       font = list(size = 10, color = col$fg)))) |>
     plotly::config(toImageButtonOptions = list(format = "png", scale = 2, filename = "wheres_o_mykiss"))
 }
@@ -348,6 +349,28 @@ ui <- page_navbar(
   ),
 
   nav_panel(
+    "Cohorts", icon = bs_icon("bar-chart-steps"),
+    card(card_header("What happened to each release-year cohort?",
+           radioButtons("coh_mode", NULL, c("Percent of cohort" = "fill", "Number of fish" = "stack"),
+                        inline = TRUE)),
+         plotlyOutput("plot_cohort", height = "420px")),
+    card(card_header("Cohort summary"), DTOutput("tbl_cohort"),
+         card_footer(class = "text-muted",
+           "Later cohorts have had less time to complete a return (steelhead can spend 1\u20134 years at sea), so low return counts for recent years are expected. Counts respond to the left-panel filters.")),
+    tags$div(class = "provenance", textOutput("prov_cohort"))
+  ),
+
+  nav_panel(
+    "Corridor map", icon = bs_icon("map"),
+    card(card_header("Where tagged fish were detected, from the Okanagan to the Pacific"),
+         plotlyOutput("plot_map", height = "600px"),
+         card_footer(class = "text-muted",
+           "Circle size = number of fish detected or recovered at that site (marks excluded). Site coordinates are approximate, for orientation only. The line is an indicative downstream route, not a tracked path.")),
+    card(card_header("Detections by site"), DTOutput("tbl_map")),
+    tags$div(class = "provenance", textOutput("prov_map"))
+  ),
+
+  nav_panel(
     "Outmigration & predation", icon = bs_icon("box-arrow-right"),
     tags$div(class = "seabanner-wrap", HTML(seabird_html)),
     card(card_header("What do these numbers mean?"), uiOutput("wnm")),
@@ -363,6 +386,34 @@ ui <- page_navbar(
       smolts**. Combined with near-zero detected returns, this underlines how little of the
       population survives the seaward journey.")),
     tags$div(class = "provenance", textOutput("prov_pred"))
+  ),
+
+  nav_panel(
+    "Estuary predation", icon = bs_icon("crosshair"),
+    layout_column_wrap(
+      width = 1/4, fill = FALSE,
+      value_box("Tags on bird colonies", textOutput("ep_n"), showcase = bs_icon("tag"),
+                theme = value_box_theme(bg = pal$red, fg = "white")),
+      value_box("Median days, release to recovery", textOutput("ep_days"), showcase = bs_icon("hourglass-split"),
+                theme = value_box_theme(bg = "#e08a2e", fg = "white")),
+      value_box("Seen leaving first", textOutput("ep_seen"), showcase = bs_icon("eye"),
+                theme = value_box_theme(bg = "#1f5f9e", fg = "white")),
+      value_box("Colonies involved", textOutput("ep_isl"), showcase = bs_icon("geo-alt"),
+                theme = value_box_theme(bg = "#1aa37d", fg = "white"))
+    ),
+    card(card_header("Journey of each fish recovered on a bird colony"),
+         plotlyOutput("plot_ep", height = "380px")),
+    layout_column_wrap(
+      width = 1/2,
+      card(card_header("Recoveries by colony"), plotlyOutput("plot_ep_isl", height = "300px")),
+      card(card_header("Fish detail"), DTOutput("tbl_ep"))
+    ),
+    card(card_header("How to read this"), markdown(
+      "Colonies are scanned for tags after the nesting season, so the **recovery date is when the colony
+       was surveyed, not the day the fish was eaten**. The true predation date lies between the last
+       downstream detection and the survey. Recovered tags are a **minimum**: most predated tags are never
+       found, so these five fish are a floor for avian predation, not a rate.")),
+    tags$div(class = "provenance", textOutput("prov_ep"))
   ),
 
   nav_panel(
@@ -400,6 +451,9 @@ ui <- page_navbar(
        **Overview** — value boxes and the fate bar for the fish currently selected.
        **Tributary timing** — when fish were first detected in each creek.
        **Presence** — a site x year heatmap; darker = more fish.
+       **Cohorts** — outcomes for each release year.
+       **Corridor map** — where fish were detected, Okanagan to ocean.
+       **Estuary predation** — fish recovered on bird colonies.
        **Outmigration & predation** — downstream timing and the recoveries that reveal fate.
        **Fish explorer** — pick a tag and trace its whole journey (opens on the one confirmed return).
        **Data** — the full per-fish table, searchable and downloadable.")),
@@ -453,6 +507,11 @@ server <- function(input, output, session) {
            " | Mark ", input$f_mark[1], "–", input$f_mark[2],
            " | Release ", input$f_rel[1], "–", input$f_rel[2],
            "  ·  v", APP_VERSION, "  ·  Generated ", gen, " UTC")
+  })
+  filt_line <- reactive({
+    loc <- if (length(input$f_loc) == length(locs)) "all locations" else paste(input$f_loc, collapse = ", ")
+    paste0("Filters: ", loc, " | Mark ", input$f_mark[1], "\u2013", input$f_mark[2],
+           " | Release ", input$f_rel[1], "\u2013", input$f_rel[2])
   })
   output$prov_overview <- renderText(prov_text())
   output$prov_pred     <- renderText(prov_text())
@@ -517,7 +576,7 @@ server <- function(input, output, session) {
       geom_col() + coord_flip() +
       scale_fill_manual(values = fate_cols, guide = "none") +
       scale_y_continuous(labels = comma) + labs(x = NULL, y = "Number of fish") + theme_okn(col)
-    ggplotly(p, tooltip = "text") |> layout(showlegend = FALSE) |> stamp_fig(col)
+    ggplotly(p, tooltip = "text") |> layout(showlegend = FALSE) |> stamp_fig(col, filt_line())
   })
   output$tbl_fate <- renderDT(
     datatable(fate_tbl(), rownames = FALSE, options = list(dom = "t", pageLength = 10),
@@ -544,7 +603,7 @@ server <- function(input, output, session) {
       scale_x_continuous(breaks = c(1,32,60,91,121,152,182,213,244,274,305,335),
                          labels = month.abb, limits = c(1, 366)) +
       labs(x = "Day of year (first detection)", y = NULL) + theme_okn(col)
-    ggplotly(p, tooltip = "text") |> stamp_fig(col)
+    ggplotly(p, tooltip = "text") |> stamp_fig(col, filt_line())
   })
 
   # ---- presence ----
@@ -560,7 +619,7 @@ server <- function(input, output, session) {
       geom_tile(color = "white") + geom_text(aes(label = fish), size = 3, color = col$fg) +
       scale_fill_viridis_c(option = "magma", direction = -1, name = "Fish") +
       labs(x = NULL, y = NULL) + theme_okn(col) + theme(legend.position = "right")
-    ggplotly(p, tooltip = "text") |> stamp_fig(col)
+    ggplotly(p, tooltip = "text") |> stamp_fig(col, filt_line())
   })
 
   # ---- outmigration ----
@@ -574,11 +633,155 @@ server <- function(input, output, session) {
     p <- ggplot(d, aes(month, n, text = paste0(month, ": ", n))) +
       geom_col(fill = pal$blue) + geom_text(aes(label = n), vjust = -0.4, size = 4, color = col$fg) +
       labs(x = NULL, y = "Fish") + theme_okn(col)
-    ggplotly(p, tooltip = "text") |> stamp_fig(col)
+    ggplotly(p, tooltip = "text") |> stamp_fig(col, filt_line())
   })
   output$tbl_rec <- renderDT(
     datatable(rec |> filter(tag_code %in% tags_f()), rownames = FALSE,
               options = list(dom = "t", pageLength = 10, scrollX = TRUE)))
+
+  output$prov_cohort <- renderText(prov_text())
+  output$prov_map    <- renderText(prov_text())
+  output$prov_ep     <- renderText(prov_text())
+
+  # ---- cohorts ----
+  output$plot_cohort <- renderPlotly({
+    col <- cur_cols()
+    d <- pf_f() |> count(release_year, fate)
+    validate(need(nrow(d) > 0, "No fish for this selection."))
+    d <- d |> mutate(fate = factor(fate, levels = rev(fate_order)))
+    ylab <- if (!identical(input$coh_mode, "stack")) "Share of cohort" else "Number of fish"
+    p <- ggplot(d, aes(factor(release_year), n, fill = fate,
+                       text = paste0(release_year, " \u00b7 ", fate, ": ", n))) +
+      geom_col(position = if (is.null(input$coh_mode)) "fill" else input$coh_mode) +
+      scale_fill_manual(values = fate_cols, name = NULL, breaks = fate_order) +
+      labs(x = "Release year", y = ylab) + theme_okn(col)
+    if (!identical(input$coh_mode, "stack")) p <- p + scale_y_continuous(labels = percent)
+    ggplotly(p, tooltip = "text") |> stamp_fig(col, filt_line())
+  })
+  output$tbl_cohort <- renderDT({
+    d <- pf_f() |> group_by(`Release year` = release_year) |>
+      summarise(Tagged = n(),
+                Left = sum(left_basin == "Y", na.rm = TRUE),
+                `Left (%)` = round(100 * Left / Tagged, 1),
+                `Eaten by birds` = sum(fate == "recovered - predation island"),
+                Returned = sum(startsWith(fate, "confirmed return")),
+                `Returned (%)` = round(100 * Returned / Tagged, 2), .groups = "drop")
+    datatable(d, rownames = FALSE, options = list(dom = "t", pageLength = 12))
+  })
+
+  # ---- corridor map ----
+  site_xy <- tibble::tribble(
+    ~site_name,                          ~lat,   ~lon,     ~grp,
+    "Inkaneep Creek",                    49.16, -119.56, "Okanagan (in-basin)",
+    "Vaseux Creek",                      49.29, -119.53, "Okanagan (in-basin)",
+    "Shuttleworth Creek",                49.34, -119.55, "Okanagan (in-basin)",
+    "Shatford Creek",                    49.40, -119.57, "Okanagan (in-basin)",
+    "Shingle Creek",                     49.43, -119.60, "Okanagan (in-basin)",
+    "Okanagan R. @ VDS-3",               49.25, -119.54, "Okanagan (in-basin)",
+    "McIntyre Dam",                      49.20, -119.55, "Okanagan (in-basin)",
+    "Skaha Dam ladder",                  49.34, -119.57, "Okanagan (in-basin)",
+    "Penticton Channel",                 49.48, -119.58, "Okanagan (in-basin)",
+    "Penticton Dam",                     49.47, -119.59, "Okanagan (in-basin)",
+    "Zosel Dam",                         48.98, -119.46, "Okanagan (in-basin)",
+    "Wells Dam adult ladder",            47.95, -119.86, "Return corridor",
+    "Rocky Reach Dam (juv)",             47.53, -120.30, "Columbia downstream",
+    "Bonneville Corner Collector",       45.64, -121.94, "Columbia downstream",
+    "Bonneville Dam (juv)",              45.64, -121.94, "Columbia downstream",
+    "Columbia estuary rkm62",            46.20, -123.68, "Columbia downstream",
+    "Estuary towed array",               46.25, -123.90, "Columbia downstream",
+    "Badger Island (predation)",         46.18, -119.20, "Bird colony (predation)",
+    "Little Miller Island (predation)",  45.65, -121.00, "Bird colony (predation)",
+    "East Sand Island (predation)",      46.26, -123.98, "Bird colony (predation)")
+  grp_cols <- c("Okanagan (in-basin)" = "#2a78d6", "Return corridor" = "#1E6B3A",
+                "Columbia downstream" = "#eb6834", "Bird colony (predation)" = "#9E2B25")
+  map_tbl <- reactive({
+    ev_f() |> filter(event_type != "Mark") |>
+      group_by(site_name) |> summarise(fish = n_distinct(tag_code), .groups = "drop") |>
+      inner_join(site_xy, by = "site_name")
+  })
+  output$plot_map <- renderPlotly({
+    col <- cur_cols()
+    d <- map_tbl(); validate(need(nrow(d) > 0, "No detections for this selection."))
+    dark <- input$theme %in% c("dark", "midnight", "graphite", "forest", "highcon")
+    route <- site_xy[match(c("Vaseux Creek", "Wells Dam adult ladder", "Rocky Reach Dam (juv)",
+                             "Badger Island (predation)", "Little Miller Island (predation)",
+                             "Bonneville Dam (juv)", "East Sand Island (predation)"), site_xy$site_name), ]
+    p <- plot_ly() |>
+      add_trace(type = "scattermapbox", mode = "lines", lat = route$lat, lon = route$lon,
+                line = list(color = if (dark) "#8fb3d1" else "#4a6a85", width = 2),
+                hoverinfo = "none", showlegend = FALSE)
+    mx <- max(d$fish)
+    for (g in names(grp_cols)) {
+      dg <- d[d$grp == g, ]
+      if (!nrow(dg)) next
+      p <- p |> add_trace(type = "scattermapbox", mode = "markers", name = g,
+        lat = dg$lat, lon = dg$lon,
+        marker = list(size = 9 + 30 * sqrt(dg$fish / mx), color = grp_cols[[g]], opacity = 0.8),
+        text = paste0(dg$site_name, ": ", dg$fish, " fish"), hoverinfo = "text")
+    }
+    p |> layout(mapbox = list(style = if (dark) "carto-darkmatter" else "carto-positron",
+                              center = list(lon = -120.9, lat = 46.9), zoom = 4.6)) |>
+      stamp_fig(col, filt_line())
+  })
+  output$tbl_map <- renderDT({
+    d <- map_tbl() |> arrange(desc(fish)) |> select(Site = site_name, Group = grp, Fish = fish)
+    datatable(d, rownames = FALSE, options = list(dom = "tp", pageLength = 10))
+  })
+
+  # ---- estuary predation deep-dive ----
+  ep_df <- reactive({
+    r <- rec |> filter(zone == "Columbia predation island", tag_code %in% tags_f())
+    if (!nrow(r)) return(r |> mutate(mark_date = as.Date(character()), down_date = as.Date(character()),
+                                      island = character(), days = numeric(), label = character()))
+    mk <- ev |> filter(event_type == "Mark") |> group_by(tag_code) |>
+      summarise(mark_date = min(event_date), .groups = "drop")
+    dn <- ev |> filter(site_code %in% down_sites) |> group_by(tag_code) |>
+      summarise(down_date = min(event_date), .groups = "drop")
+    r |> left_join(mk, by = "tag_code") |> left_join(dn, by = "tag_code") |>
+      mutate(recovery_date = as.Date(recovery_date),
+             island = sub(" \\(predation\\)", "", recovery_site),
+             days = as.numeric(recovery_date - mark_date),
+             label = paste0(substr(tag_code, 5, 14), " \u00b7 ", release_site, " ", release_year)) |>
+      arrange(mark_date)
+  })
+  output$ep_n    <- renderText(nrow(ep_df()))
+  output$ep_days <- renderText(if (nrow(ep_df())) format(round(median(ep_df()$days, na.rm = TRUE)), big.mark = ",") else "\u2013")
+  output$ep_seen <- renderText(paste0(sum(!is.na(ep_df()$down_date)), " of ", nrow(ep_df())))
+  output$ep_isl  <- renderText(n_distinct(ep_df()$island))
+  output$plot_ep <- renderPlotly({
+    col <- cur_cols(); d <- ep_df()
+    validate(need(nrow(d) > 0, "No bird-colony recoveries for this selection."))
+    d <- d |> mutate(label = factor(label, levels = rev(unique(label))))
+    pts <- bind_rows(
+      d |> transmute(label, date = mark_date, stage = "Tagged & released"),
+      d |> filter(!is.na(down_date)) |> transmute(label, date = down_date, stage = "First downstream detection"),
+      d |> transmute(label, date = recovery_date, stage = paste0("Recovered on colony")))
+    p <- ggplot() +
+      geom_segment(data = d, aes(x = mark_date, xend = recovery_date, y = label, yend = label),
+                   color = col$grid, linewidth = 1.2) +
+      geom_point(data = pts, aes(date, label, color = stage,
+                 text = paste0(label, "<br>", stage, ": ", date)), size = 3.4) +
+      scale_color_manual(values = c("Tagged & released" = pal$grey,
+                                    "First downstream detection" = pal$blue,
+                                    "Recovered on colony" = pal$red), name = NULL) +
+      labs(x = NULL, y = NULL) + theme_okn(col)
+    ggplotly(p, tooltip = "text") |> stamp_fig(col, filt_line())
+  })
+  output$plot_ep_isl <- renderPlotly({
+    col <- cur_cols(); d <- ep_df()
+    validate(need(nrow(d) > 0, "No bird-colony recoveries for this selection."))
+    d <- d |> count(island)
+    p <- ggplot(d, aes(reorder(island, n), n, text = paste0(island, ": ", n))) +
+      geom_col(fill = pal$red) + coord_flip() +
+      scale_y_continuous(breaks = scales::breaks_pretty()) +
+      labs(x = NULL, y = "Tags recovered") + theme_okn(col)
+    ggplotly(p, tooltip = "text") |> stamp_fig(col, filt_line())
+  })
+  output$tbl_ep <- renderDT({
+    d <- ep_df() |> transmute(Tag = tag_code, Colony = island, `Release` = paste(release_site, release_year),
+                              `Recovered` = recovery_date, `Days at large` = days)
+    datatable(d, rownames = FALSE, options = list(dom = "t", scrollX = TRUE, pageLength = 10))
+  })
 
   # ---- fish explorer ----
   observe({
@@ -612,7 +815,7 @@ server <- function(input, output, session) {
       scale_color_manual(values = c(Mark = pal$grey, Observation = pal$blue,
                                     Recapture = pal$orange, Recovery = pal$red), name = NULL) +
       labs(x = NULL, y = NULL) + theme_okn(col)
-    ggplotly(p, tooltip = "text") |> stamp_fig(col)
+    ggplotly(p, tooltip = "text") |> stamp_fig(col, paste0("Fish: ", input$fx_tag))
   })
   output$fx_events <- renderDT(
     datatable(fx_ev() |> select(event_date, event_type, site_name, zone), rownames = FALSE,

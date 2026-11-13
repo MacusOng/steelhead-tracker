@@ -2,6 +2,13 @@
 
 All notable changes to this app. Newest first. Semantic versioning (MAJOR.MINOR.PATCH).
 
+## 0.7.0 — 2026-11-13
+Three new tabs. **Cohorts**: fate of each release-year cohort (percent or count) with a summary table.
+**Corridor map**: detection sites from the Okanagan to the Columbia estuary, sized by fish count, on a map
+that follows the theme (approximate coordinates). **Estuary predation**: journey of each fish recovered on a
+bird colony, recoveries by colony, and how to read recovery dates. Exported plots now also carry the active
+filters in the footer, above the version and Generated line. Includes the 0.6.1 export fixes.
+
 ## 0.6.1 — 2026-11-13
 Export fixes. The version/Generated footer is now positioned by a fixed pixel offset below the plot, so it
 appears on **every** plot (tall plots such as the presence heat map previously pushed it out of view). Axes
