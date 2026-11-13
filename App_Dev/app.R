@@ -17,7 +17,7 @@ library(viridisLite)
 # Data: PTAGIS complete tag history, all event types, 19 Aug 2026.
 # Cohort = fish released 2019+. Dates are as recorded (UTC).
 # =====================================================================
-APP_VERSION <- "0.7.0"
+APP_VERSION <- "0.7.1"
 BUILT_UTC   <- "2026-11-12"
 
 # ---- load data ----
@@ -58,9 +58,9 @@ my_min <- min(pf$mark_year,   na.rm = TRUE);  my_max <- max(pf$mark_year,   na.r
 # plot background/foreground per theme, so charts match (no white boxes on dark themes)
 plot_theme_cols <- list(
   classic  = list(bg="#ffffff", fg="#0e2d49", grid="#e4e9ee"),
-  light    = list(bg="#ffffff", fg="#1a1a1a", grid="#e4e4e4"),
+  viridis  = list(bg="#f3f9f6", fg="#1c3b44", grid="#d3e6dd"),
   dark     = list(bg="#15181c", fg="#e6edf3", grid="#333a42"),
-  midnight = list(bg="#0b1220", fg="#cdd9e5", grid="#1e2b45"),
+  magma    = list(bg="#140b1f", fg="#f3e6ef", grid="#3a2150"),
   graphite = list(bg="#1b1b1d", fg="#e4e4e6", grid="#34343a"),
   forest   = list(bg="#0f1a12", fg="#d7e6d8", grid="#24352a"),
   sand     = list(bg="#f5efe2", fg="#3a2f1e", grid="#e0d6c0"),
@@ -107,14 +107,14 @@ mk <- function(bg, fg, primary, secondary = "#1aa37d")
   bs_theme(version = 5, bg = bg, fg = fg, primary = primary, secondary = secondary)
 themes <- list(
   classic  = mk("#f6f9fb", "#0e2d49", "#1f5f9e"),
-  light    = mk("#ffffff", "#1a1a1a", "#1f5f9e"),
+  viridis  = mk("#f3f9f6", "#1c3b44", "#21918c", "#5ec962"),
   dark     = mk("#15181c", "#e6edf3", "#3b82f6"),
-  midnight = mk("#0b1220", "#cdd9e5", "#4f8cff"),
+  magma    = mk("#140b1f", "#f3e6ef", "#de4968", "#fe9f6d"),
   graphite = mk("#1b1b1d", "#e4e4e6", "#e03a3a", "#8a8a8e"),
   forest   = mk("#0f1a12", "#d7e6d8", "#2f9e5e", "#6cc08a"),
   sand     = mk("#f5efe2", "#3a2f1e", "#b5801f", "#caa45a"),
   highcon  = mk("#000000", "#ffffff", "#ffd400", "#ffffff"))
-theme_choices <- c("Classic"="classic","Light"="light","Dark"="dark","Midnight"="midnight",
+theme_choices <- c("Classic"="classic","Viridis"="viridis","Dark"="dark","Magma"="magma",
                    "Graphite"="graphite","Forest"="forest","Sand"="sand","High Contrast"="highcon")
 
 # ---- 10 fonts ----
@@ -168,9 +168,9 @@ google_fonts <- "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400
 # ---- theme preview cards (gradient, bg, surface, primary, text) ----
 theme_prev <- list(
   classic  = c("linear-gradient(90deg,#0e2d49,#1aa37d)","#f6f9fb","#dde7ee","#1f5f9e","#0e2d49"),
-  light    = c("linear-gradient(90deg,#17324e,#1aa37d)","#ffffff","#eef2f4","#1f5f9e","#1a1a1a"),
+  viridis  = c("linear-gradient(90deg,#3b528b,#21918c 55%,#5ec962)","#f3f9f6","#d6ebe2","#21918c","#1c3b44"),
   dark     = c("linear-gradient(90deg,#0b0e12,#13343b)","#15181c","#262b31","#3b82f6","#e6edf3"),
-  midnight = c("linear-gradient(90deg,#060a16,#123a58)","#0b1220","#182440","#4f8cff","#cdd9e5"),
+  magma    = c("linear-gradient(90deg,#0b0414,#3b0f70 55%,#b73779)","#140b1f","#2a1540","#de4968","#f3e6ef"),
   graphite = c("linear-gradient(90deg,#141416,#4a1f1f)","#1b1b1d","#2c2c30","#e03a3a","#e4e4e6"),
   forest   = c("linear-gradient(90deg,#0a140d,#1f6b43)","#0f1a12","#1b2b20","#2f9e5e","#d7e6d8"),
   sand     = c("linear-gradient(90deg,#6b5a33,#b5801f)","#f5efe2","#e6dcc5","#b5801f","#3a2f1e"),
@@ -702,7 +702,7 @@ server <- function(input, output, session) {
   output$plot_map <- renderPlotly({
     col <- cur_cols()
     d <- map_tbl(); validate(need(nrow(d) > 0, "No detections for this selection."))
-    dark <- input$theme %in% c("dark", "midnight", "graphite", "forest", "highcon")
+    dark <- input$theme %in% c("dark", "magma", "graphite", "forest", "highcon")
     route <- site_xy[match(c("Vaseux Creek", "Wells Dam adult ladder", "Rocky Reach Dam (juv)",
                              "Badger Island (predation)", "Little Miller Island (predation)",
                              "Bonneville Dam (juv)", "East Sand Island (predation)"), site_xy$site_name), ]

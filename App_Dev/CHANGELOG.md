@@ -2,6 +2,11 @@
 
 All notable changes to this app. Newest first. Semantic versioning (MAJOR.MINOR.PATCH).
 
+## 0.7.1 — 2026-11-13
+Theme refresh: the duplicate **Light** and **Midnight** themes are replaced by **Viridis** (soft mint and
+teal, light) and **Magma** (deep plum with coral and apricot accents, dark). Charts, tables, map and
+navbar follow each new theme.
+
 ## 0.7.0 — 2026-11-13
 Three new tabs. **Cohorts**: fate of each release-year cohort (percent or count) with a summary table.
 **Corridor map**: detection sites from the Okanagan to the Columbia estuary, sized by fish count, on a map

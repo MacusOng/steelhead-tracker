@@ -10,9 +10,9 @@ body, .navbar, .card, .form-control, .form-select, .btn, .accordion,
 }
 
 /* ---- per-theme navbar gradient ---- */
-html[data-theme="light"]    { --nav-grad: linear-gradient(90deg,#17324e,#2a6fb0 55%,#1aa37d); }
+html[data-theme="viridis"]  { --nav-grad: linear-gradient(90deg,#3b528b,#21918c 55%,#5ec962); }
 html[data-theme="dark"]     { --nav-grad: linear-gradient(90deg,#0b0e12,#1b2740 55%,#13343b); }
-html[data-theme="midnight"] { --nav-grad: linear-gradient(90deg,#060a16,#13213f 55%,#123a58); }
+html[data-theme="magma"]    { --nav-grad: linear-gradient(90deg,#0b0414,#3b0f70 55%,#b73779); }
 html[data-theme="graphite"] { --nav-grad: linear-gradient(90deg,#141416,#2a2a2e 55%,#4a1f1f); }
 html[data-theme="forest"]   { --nav-grad: linear-gradient(90deg,#0a140d,#163a24 55%,#1f6b43); }
 html[data-theme="sand"]     { --nav-grad: linear-gradient(90deg,#6b5a33,#9a7d3e 55%,#b5801f); }
@@ -104,7 +104,7 @@ html[data-theme="highcon"]  { --nav-grad: linear-gradient(90deg,#000,#1a1a00 55%
 /* fish tint per theme */
 html[data-theme="forest"]   .swim{filter:saturate(1.15) hue-rotate(-10deg)}
 html[data-theme="sand"]     .swim{filter:sepia(.35) saturate(1.2)}
-html[data-theme="dark"]     .swim,html[data-theme="midnight"] .swim{filter:brightness(1.08)}
+html[data-theme="dark"]     .swim,html[data-theme="magma"] .swim{filter:brightness(1.08)}
 html[data-theme="graphite"] .swim{filter:saturate(.7)}
 html[data-theme="highcon"]  .swim{filter:contrast(1.3) saturate(1.3)}
 
@@ -156,24 +156,27 @@ html[data-theme="highcon"]  .swim{filter:contrast(1.3) saturate(1.3)}
 .nb-line{font-size:13.5px;color:var(--bs-body-color)}
 
 /* dark-theme data tables (no light boxes) */
-html[data-theme="dark"] table.dataTable,html[data-theme="midnight"] table.dataTable,
+html[data-theme="dark"] table.dataTable,html[data-theme="magma"] table.dataTable,
 html[data-theme="graphite"] table.dataTable,html[data-theme="forest"] table.dataTable,
 html[data-theme="highcon"] table.dataTable{color:var(--bs-body-color)}
-html[data-theme="dark"] table.dataTable td,html[data-theme="midnight"] table.dataTable td,
+html[data-theme="dark"] table.dataTable td,html[data-theme="magma"] table.dataTable td,
 html[data-theme="graphite"] table.dataTable td,html[data-theme="forest"] table.dataTable td,
 html[data-theme="highcon"] table.dataTable td,
-html[data-theme="dark"] table.dataTable th,html[data-theme="midnight"] table.dataTable th,
+html[data-theme="dark"] table.dataTable th,html[data-theme="magma"] table.dataTable th,
 html[data-theme="graphite"] table.dataTable th,html[data-theme="forest"] table.dataTable th,
 html[data-theme="highcon"] table.dataTable th{background-color:transparent !important;border-color:rgba(255,255,255,.1) !important;color:var(--bs-body-color) !important}
-html[data-theme="dark"] .dataTables_wrapper,html[data-theme="midnight"] .dataTables_wrapper,
+html[data-theme="dark"] .dataTables_wrapper,html[data-theme="magma"] .dataTables_wrapper,
 html[data-theme="graphite"] .dataTables_wrapper,html[data-theme="forest"] .dataTables_wrapper,
 html[data-theme="highcon"] .dataTables_wrapper{color:var(--bs-body-color)}
-html[data-theme="dark"] .dataTables_filter input,html[data-theme="midnight"] .dataTables_filter input,
+html[data-theme="dark"] .dataTables_filter input,html[data-theme="magma"] .dataTables_filter input,
 html[data-theme="graphite"] .dataTables_filter input,html[data-theme="forest"] .dataTables_filter input,
 html[data-theme="highcon"] .dataTables_filter input,
-html[data-theme="dark"] .dataTables_length select,html[data-theme="midnight"] .dataTables_length select,
+html[data-theme="dark"] .dataTables_length select,html[data-theme="magma"] .dataTables_length select,
 html[data-theme="graphite"] .dataTables_length select,html[data-theme="forest"] .dataTables_length select,
 html[data-theme="highcon"] .dataTables_length select{background:rgba(255,255,255,.08);color:var(--bs-body-color);border:1px solid rgba(255,255,255,.2)}
-html[data-theme="dark"] .paginate_button,html[data-theme="midnight"] .paginate_button,
+html[data-theme="dark"] .paginate_button,html[data-theme="magma"] .paginate_button,
 html[data-theme="graphite"] .paginate_button,html[data-theme="forest"] .paginate_button,
 html[data-theme="highcon"] .paginate_button{color:var(--bs-body-color) !important}
+
+html[data-theme="viridis"] .swim{filter:hue-rotate(15deg) saturate(1.1)}
+html[data-theme="magma"]   .swim{filter:hue-rotate(250deg) saturate(1.3) brightness(1.1)}
